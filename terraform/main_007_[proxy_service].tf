@@ -149,6 +149,8 @@ resource "google_cloud_run_v2_service_iam_member" "proxy_invokers" {
 }
 
 # Custom domain mapping on Cloud Run for the AI Companion Proxy.
+# Preview feature, available only in some regions; the domain must already be verified in Search Console
+# by the identity running Terraform (https://docs.cloud.google.com/run/docs/mapping-custom-domains#run).
 resource "google_cloud_run_domain_mapping" "proxy_domain_mapping" {
   depends_on = [google_cloud_run_v2_service.ai_companion_proxy]
 

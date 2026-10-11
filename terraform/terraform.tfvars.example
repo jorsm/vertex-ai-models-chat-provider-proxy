@@ -120,7 +120,10 @@ max_context_tokens = 500000
 discovery_max_input_tokens = 250000
 
 # Domain mapped to the Cloud Run service; also published as PROXY_BASE_URL in /openapi.json.
-# You must own it and create the DNS records listed by: terraform output custom_domain_dns_records
+# You must own it and verify it in Search Console (https://search.google.com/search-console) BEFORE terraform apply;
+# Terraform cannot do this. After the apply, create the DNS records listed by: terraform output custom_domain_dns_records
+# Cloud Run domain mapping is a Preview feature available only in some regions: check `region` against
+# https://docs.cloud.google.com/run/docs/mapping-custom-domains#run
 custom_domain = "ai-companion-proxy.example.com"
 
 #

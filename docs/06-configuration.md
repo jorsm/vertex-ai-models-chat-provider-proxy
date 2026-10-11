@@ -50,7 +50,7 @@ Variables marked *required* have no default: the service refuses to use a missin
 | `project_id` | ID of the hub project |
 | `billing_account_id` | Billing account linked to the hub project and used for the budget |
 | `region` | Region of the Cloud Run service and regional resources |
-| `custom_domain` | Domain mapped to the Cloud Run service; the proxy base URL is `https://<custom_domain>` |
+| `custom_domain` | Domain mapped to the Cloud Run service; the proxy base URL is `https://<custom_domain>`. Domain mapping is a Preview feature limited to some regions, and the domain must be verified in Search Console first: see [Deployment](07-deployment.md#3-custom-domain) |
 | `proxy_invoker_identities` | IAM members (`user:`, `group:`, `serviceAccount:`) granted `roles/run.invoker` |
 
 ### Governance

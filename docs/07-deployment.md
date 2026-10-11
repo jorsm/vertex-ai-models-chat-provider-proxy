@@ -3,7 +3,7 @@
 - [Prerequisites](#prerequisites)
 - [1. Provision the infrastructure](#1-provision-the-infrastructure)
 - [2. Deploy the proxy code](#2-deploy-the-proxy-code)
-- [3. Custom domain (optional)](#3-custom-domain-optional)
+- [3. Custom domain](#3-custom-domain)
 - [4. Verify](#4-verify)
 - [Running the container yourself](#running-the-container-yourself)
 - [Rolling out to a team](#rolling-out-to-a-team)
@@ -16,9 +16,11 @@
 - **Google Cloud SDK** (`gcloud`) authenticated as an administrator who can create projects in the target folder and link a billing account.
 - **Python 3.14** and **Docker** if you want to run or build the service locally.
 - A Google Cloud **folder** and **billing account** for the hub project.
-- Optional: a DNS zone where you can create the records of a custom domain.
+- A domain you own, with access to its DNS zone, and a Google account that can verify it in [Search Console](https://search.google.com/search-console) (see [Custom domain](#3-custom-domain)).
 
 ## 1. Provision the infrastructure
+
+Verify ownership of `custom_domain` first ([Custom domain](#3-custom-domain)): the apply creates the domain mapping and Cloud Run refuses it for an unverified domain.
 
 ```bash
 cd terraform
@@ -58,9 +60,21 @@ PROJECT_ID=my-ai-companion-hub REGION=europe-west1 ./api/deploy.sh
 
 `SERVICE_NAME` / `-ServiceName` default to `ai-companion-proxy`, which is the name Terraform uses.
 
-## 3. Custom domain (optional)
+## 3. Custom domain
 
-`terraform output custom_domain_dns_records` lists the DNS records to create for the domain mapping. Cloud Run IAM accepts ID tokens whose audience is the service URL; when clients call a custom domain, configure the matching custom audience on the service, or have clients request tokens for the service URL.
+The proxy is published on `custom_domain` through a [Cloud Run domain mapping](https://docs.cloud.google.com/run/docs/mapping-custom-domains#run).
+
+> **Preview feature.** Cloud Run domain mapping is in Preview (limited availability) and Google does not recommend it for production services because of latency issues. It is available only in a subset of regions (`asia-east1`, `asia-northeast1`, `asia-southeast1`, `europe-north1`, `europe-west1`, `europe-west4`, `us-central1`, `us-east1`, `us-east4`, `us-west1` at the time of writing), so `region` must be one of them. In any other region, or if you need a production-grade setup, front the service with a global external Application Load Balancer instead and do not use this mapping. Check the [current documentation](https://docs.cloud.google.com/run/docs/mapping-custom-domains#run) for the up-to-date list.
+
+**Domain ownership is verified outside Terraform.** Terraform cannot prove that you own the domain. Before the first `terraform apply`:
+
+1. Open [Search Console](https://search.google.com/search-console) with the Google account (or service account) that runs Terraform and add the base domain as a property, for example `example.com` for `proxy.example.com`.
+2. Complete the verification it proposes (usually a DNS `TXT` record at your registrar).
+3. To let other people or service accounts create mappings on that domain, add them under **Verified owners** of the property.
+
+After the apply, `terraform output custom_domain_dns_records` lists the DNS records to create at your registrar. The managed TLS certificate is issued once they are in place; it usually takes about 15 minutes and can take up to 24 hours. If you use CAA records, authorize both `pki.goog` and `letsencrypt.org`.
+
+Cloud Run IAM accepts ID tokens whose audience is the service URL; when clients call a custom domain, configure the matching custom audience on the service, or have clients request tokens for the service URL.
 
 ## 4. Verify
 

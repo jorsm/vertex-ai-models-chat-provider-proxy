@@ -37,7 +37,7 @@ flowchart LR
 
 ## Quick start
 
-Prerequisites: Terraform `>= 1.15.0`, the Google Cloud SDK (`gcloud`), and a Google Cloud folder and billing account.
+Prerequisites: Terraform `>= 1.15.0`, the Google Cloud SDK (`gcloud`), a Google Cloud folder and billing account, and a domain you own, verified in [Search Console](https://search.google.com/search-console) before the first apply (the Cloud Run domain mapping is a Preview feature limited to some regions: see [Deployment](docs/07-deployment.md#3-custom-domain)).
 
 ```bash
 # 1. Provision the hub project and the Cloud Run service
