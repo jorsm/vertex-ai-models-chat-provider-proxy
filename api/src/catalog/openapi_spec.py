@@ -35,8 +35,8 @@ def get_openapi_specification() -> dict[str, Any]:
 
     # Dynamic governance labels and models
     allowed_models = settings.allowed_models
-    project_label = settings.project_label_key
-    user_label = settings.user_label_key
+    project_label = settings.chat_project_label_key
+    user_label = settings.chat_user_label_key
 
     # Inject runtime config into schemas
     schemas = spec.get("components", {}).get("schemas", {})

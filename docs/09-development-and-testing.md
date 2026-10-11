@@ -23,8 +23,9 @@ All required environment variables must be set (see [Configuration](06-configura
 
 ```bash
 export HUB_PROJECT_ID=my-copilot-chat-proxy-hub ALLOWED_REGIONS=global \
-       ALLOWED_MODELS=gemini-3.8-flash USER_LABEL_KEY=vscode-vertex-ai-user \
-       PROJECT_LABEL_KEY=vscode-vertex-ai-project AUTH_USER_LABEL_KEY=proxy-auth-user \
+       ALLOWED_MODELS=gemini-3.8-flash CHAT_USER_LABEL_KEY=vscode-vertex-ai-user \
+       CHAT_PROJECT_LABEL_KEY=vscode-vertex-ai-project BILLING_USER_LABEL_KEY=assistant-user \
+       BILLING_PROJECT_LABEL_KEY=assistant-project BILLING_AUTH_USER_LABEL_KEY=assistant-auth-user \
        REQUIRE_USER_LABEL=true REQUIRE_PROJECT_LABEL=true \
        MODELS_CATALOG_URL=https://raw.githubusercontent.com/jorsm/vertex-ai-models-chat-provider/main/src/models.json \
        PROXY_BASE_URL=http://localhost:8080 MAX_CONTEXT_TOKENS=500000 \

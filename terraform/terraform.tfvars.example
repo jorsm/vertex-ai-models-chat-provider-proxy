@@ -95,14 +95,20 @@ allowed_vertex_projects = []
 # Vertex AI regions that clients may target (project and region are chosen by the client); lowercase, "global" included
 allowed_vertex_regions = ["global"]
 
-# Request label key carrying the user name chosen by the client (cost attribution)
-user_label_key = "vscode-vertex-ai-user"
+# Label keys under which the chat extension sends the user and the workspace names.
+# DON'T TOUCH THIS: the extension sends exactly these keys today. Changing them makes every request fail
+# or lose its cost attribution.
+chat_user_label_key    = "vscode-vertex-ai-user"
+chat_project_label_key = "vscode-vertex-ai-project"
 
-# Request label key carrying the workspace or project name chosen by the client (cost attribution)
-project_label_key = "vscode-vertex-ai-project"
+# Label keys written to the Vertex AI billing data (your choice: lowercase letters, digits, hyphens, underscores).
+# The user and workspace values received from the chat are remapped under these names.
+billing_user_label_key    = "assistant-user"
+billing_project_label_key = "assistant-project"
 
-# Label key the proxy sets itself with the email of the verified caller; clients cannot forge it.
-auth_user_label_key = "proxy-auth-user"
+# Billing label key for the email of the verified caller. It is set by the proxy from the verified token,
+# so clients cannot forge it. Use a name different from the two above.
+billing_auth_user_label_key = "assistant-auth-user"
 
 # URL of the raw JSON model catalog used by /discovery (a GitHub raw URL or any HTTP(S) URL the proxy can reach)
 models_catalog_url = "https://raw.githubusercontent.com/jorsm/vertex-ai-models-chat-provider/main/src/models.json"

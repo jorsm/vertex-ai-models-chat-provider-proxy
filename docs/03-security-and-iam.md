@@ -33,7 +33,7 @@ With `LOCAL_DEV_BYPASS=true` the proxy skips token validation and acts as `local
 
 ## Anti-spoofing
 
-The cost-attribution label that identifies the caller (`AUTH_USER_LABEL_KEY`, `proxy-auth-user` in the sample configuration) is derived **only** from the verified token. Labels the client sends, such as `vscode-vertex-ai-user`, are kept as descriptive metadata but never decide who is billed. A client cannot attribute its usage to someone else.
+The cost-attribution label that identifies the caller (`BILLING_AUTH_USER_LABEL_KEY`) is derived **only** from the verified token. Labels the client sends, such as `vscode-vertex-ai-user`, are remapped to the billing keys as descriptive metadata but never decide who is billed. A client cannot attribute its usage to someone else.
 
 ## IAM matrix
 

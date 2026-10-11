@@ -22,9 +22,11 @@ Variables marked *required* have no default: the service refuses to use a missin
 | `ALLOWED_VERTEX_PROJECTS` | no | Comma-separated list (or JSON array) of Vertex AI project IDs clients may target; defaults to `HUB_PROJECT_ID` | `allowed_vertex_projects` (empty list = hub project) |
 | `ALLOWED_REGIONS` | yes | Comma-separated list (or JSON array) of permitted Vertex AI locations, for example `global` | `allowed_vertex_regions` |
 | `ALLOWED_MODELS` | yes | Comma-separated list (or JSON array) of permitted model IDs, including effort variants | `allowed_models` |
-| `USER_LABEL_KEY` | yes | Label key for the client-declared user | `user_label_key` |
-| `PROJECT_LABEL_KEY` | yes | Label key for the client-declared workspace | `project_label_key` |
-| `AUTH_USER_LABEL_KEY` | yes | Label key for the verified caller | `auth_user_label_key` |
+| `CHAT_USER_LABEL_KEY` | yes | Key under which the chat client sends the user (don't touch: fixed by the extension) | `chat_user_label_key` |
+| `CHAT_PROJECT_LABEL_KEY` | yes | Key under which the chat client sends the workspace (don't touch: fixed by the extension) | `chat_project_label_key` |
+| `BILLING_USER_LABEL_KEY` | yes | Billing label key that carries the client-declared user | `billing_user_label_key` |
+| `BILLING_PROJECT_LABEL_KEY` | yes | Billing label key that carries the client-declared workspace | `billing_project_label_key` |
+| `BILLING_AUTH_USER_LABEL_KEY` | yes | Billing label key that carries the verified caller | `billing_auth_user_label_key` |
 | `REQUIRE_USER_LABEL` | yes | `true`/`false`: reject requests without the user label | `require_user_label` |
 | `REQUIRE_PROJECT_LABEL` | yes | `true`/`false`: reject requests without the project label | `require_project_label` |
 | `MODELS_CATALOG_URL` | yes | URL of the model catalog JSON used for discovery and pricing | `models_catalog_url` |
@@ -55,7 +57,7 @@ Variables marked *required* have no default: the service refuses to use a missin
 
 ### Governance
 
-`allowed_models`, `allowed_vertex_projects`, `allowed_vertex_regions`, `user_label_key`, `project_label_key`, `auth_user_label_key`, `require_project_label`, `require_user_label`, `models_catalog_url`, `max_context_tokens`, `discovery_max_input_tokens` correspond one-to-one to the environment variables above.
+`allowed_models`, `allowed_vertex_projects`, `allowed_vertex_regions`, `chat_user_label_key`, `chat_project_label_key`, `billing_user_label_key`, `billing_project_label_key`, `billing_auth_user_label_key`, `require_project_label`, `require_user_label`, `models_catalog_url`, `max_context_tokens`, `discovery_max_input_tokens` correspond one-to-one to the environment variables above.
 
 ### Usage analytics, budgets and alerts
 

@@ -33,20 +33,33 @@ The Vertex AI location is read from the path (`/locations/{region}/`). It must b
 
 ## Cost-attribution labels
 
-Three labels are enforced, using key names taken from configuration:
+Label names are configured twice, because the name the chat client uses is not necessarily the name you want in the billing data.
+
+**Received from the chat client** (the keys the client sends, used only to read the values):
+
+| Setting | Meaning |
+| --- | --- |
+| `CHAT_USER_LABEL_KEY` | Key carrying the client-declared user |
+| `CHAT_PROJECT_LABEL_KEY` | Key carrying the workspace or repository being worked on |
+
+> **Don't touch these two.** The chat extension sends `vscode-vertex-ai-user` and `vscode-vertex-ai-project` today; if they do not match, requests are rejected or lose their attribution.
+
+**Written to billing** (the label keys on the Vertex AI request, chosen freely):
 
 | Setting | Meaning | Source of the value |
 | --- | --- | --- |
-| `USER_LABEL_KEY` | Client-declared user (descriptive) | Sent by the client |
-| `PROJECT_LABEL_KEY` | Workspace or repository being worked on | Sent by the client |
-| `AUTH_USER_LABEL_KEY` | Authenticated caller | **Derived from the verified token** |
+| `BILLING_USER_LABEL_KEY` | Client-declared user (descriptive) | Remapped from `CHAT_USER_LABEL_KEY` |
+| `BILLING_PROJECT_LABEL_KEY` | Workspace or repository being worked on | Remapped from `CHAT_PROJECT_LABEL_KEY` |
+| `BILLING_AUTH_USER_LABEL_KEY` | Authenticated caller | **Derived from the verified token** (no client counterpart) |
+
+The client labels are read under the chat keys and sent to Vertex AI under the billing keys only; the original chat-key labels are removed. Keep the three billing keys different from each other.
 
 A fourth label, `managed-by = copilot-chat-proxy`, marks traffic that went through the proxy.
 
 - `REQUIRE_USER_LABEL` / `REQUIRE_PROJECT_LABEL` decide whether a missing client label is an error (`Missing required label '<key>'`) or is replaced by the value `default`.
 - Label values are sanitized to the Google Cloud label rules: lowercase letters, digits, `_` and `-`; at most 63 characters; they must start with a letter (a `v_` prefix is added otherwise); empty input becomes `unknown`. For example `jane.doe@example.com` becomes `jane_doe_example_com`.
 
-The proxy looks for client labels, in this order, in: a header named like the label key, the base64 JSON `X-Vertex-AI-Labels` header, the body's `config.labels`, and the body's root `labels`.
+The proxy looks for client labels, using the chat keys, in this order, in: a header named like the label key, the base64 JSON `X-Vertex-AI-Labels` header, the body's `config.labels`, and the body's root `labels`.
 
 ### How labels reach Vertex AI
 

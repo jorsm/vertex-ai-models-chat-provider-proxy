@@ -346,8 +346,8 @@ class _MeteredStream:
             {
                 **ctx.base_event(timestamp_iso()),
                 "provider_response_id": self.accumulator.provider_response_id,
-                "client_user_label": self.labels.get(settings.user_label_key),
-                "workspace_label": self.labels.get(settings.project_label_key),
+                "client_user_label": self.labels.get(settings.billing_user_label_key),
+                "workspace_label": self.labels.get(settings.billing_project_label_key),
                 "effective_labels": self.labels,
                 "provider": self.provider,
                 "model_requested": self.model_id,

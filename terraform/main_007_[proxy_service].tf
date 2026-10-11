@@ -64,16 +64,24 @@ resource "google_cloud_run_v2_service" "copilot_chat_proxy" {
         value = join(",", var.allowed_models)
       }
       env {
-        name  = "USER_LABEL_KEY"
-        value = var.user_label_key
+        name  = "CHAT_USER_LABEL_KEY"
+        value = var.chat_user_label_key
       }
       env {
-        name  = "PROJECT_LABEL_KEY"
-        value = var.project_label_key
+        name  = "CHAT_PROJECT_LABEL_KEY"
+        value = var.chat_project_label_key
       }
       env {
-        name  = "AUTH_USER_LABEL_KEY"
-        value = var.auth_user_label_key
+        name  = "BILLING_USER_LABEL_KEY"
+        value = var.billing_user_label_key
+      }
+      env {
+        name  = "BILLING_PROJECT_LABEL_KEY"
+        value = var.billing_project_label_key
+      }
+      env {
+        name  = "BILLING_AUTH_USER_LABEL_KEY"
+        value = var.billing_auth_user_label_key
       }
       env {
         name  = "REQUIRE_PROJECT_LABEL"

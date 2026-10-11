@@ -70,19 +70,29 @@ class Settings:
         return _parse_required_list("ALLOWED_REGIONS")
 
     @property
-    def user_label_key(self) -> str:
-        """Request label key for the client user, from `USER_LABEL_KEY`."""
-        return _get_required_env("USER_LABEL_KEY")
+    def chat_user_label_key(self) -> str:
+        """Label key under which the chat client sends the user, from `CHAT_USER_LABEL_KEY`."""
+        return _get_required_env("CHAT_USER_LABEL_KEY")
 
     @property
-    def project_label_key(self) -> str:
-        """Request label key for the client workspace, from `PROJECT_LABEL_KEY`."""
-        return _get_required_env("PROJECT_LABEL_KEY")
+    def chat_project_label_key(self) -> str:
+        """Label key under which the chat client sends the workspace, from `CHAT_PROJECT_LABEL_KEY`."""
+        return _get_required_env("CHAT_PROJECT_LABEL_KEY")
 
     @property
-    def auth_user_label_key(self) -> str:
-        """Label key for the authenticated caller, from `AUTH_USER_LABEL_KEY`."""
-        return _get_required_env("AUTH_USER_LABEL_KEY")
+    def billing_user_label_key(self) -> str:
+        """Billing label key that carries the client-declared user, from `BILLING_USER_LABEL_KEY`."""
+        return _get_required_env("BILLING_USER_LABEL_KEY")
+
+    @property
+    def billing_project_label_key(self) -> str:
+        """Billing label key that carries the client-declared workspace, from `BILLING_PROJECT_LABEL_KEY`."""
+        return _get_required_env("BILLING_PROJECT_LABEL_KEY")
+
+    @property
+    def billing_auth_user_label_key(self) -> str:
+        """Billing label key that carries the verified caller, from `BILLING_AUTH_USER_LABEL_KEY`."""
+        return _get_required_env("BILLING_AUTH_USER_LABEL_KEY")
 
     @property
     def require_project_label(self) -> bool:

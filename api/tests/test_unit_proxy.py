@@ -46,9 +46,11 @@ def setup_test_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HUB_PROJECT_ID", "test-hub-project")
     monkeypatch.setenv("ALLOWED_VERTEX_PROJECTS", "test-hub-project,user-project,test-project,my-proj,p")
     monkeypatch.setenv("ALLOWED_REGIONS", "global")
-    monkeypatch.setenv("USER_LABEL_KEY", "vscode-vertex-ai-user")
-    monkeypatch.setenv("PROJECT_LABEL_KEY", "vscode-vertex-ai-project")
-    monkeypatch.setenv("AUTH_USER_LABEL_KEY", "proxy-auth-user")
+    monkeypatch.setenv("CHAT_USER_LABEL_KEY", "vscode-vertex-ai-user")
+    monkeypatch.setenv("CHAT_PROJECT_LABEL_KEY", "vscode-vertex-ai-project")
+    monkeypatch.setenv("BILLING_USER_LABEL_KEY", "vscode-vertex-ai-user")
+    monkeypatch.setenv("BILLING_PROJECT_LABEL_KEY", "vscode-vertex-ai-project")
+    monkeypatch.setenv("BILLING_AUTH_USER_LABEL_KEY", "proxy-auth-user")
     monkeypatch.setenv(
         "ALLOWED_MODELS",
         "claude-opus-5-5,claude-opus-5-5-high,claude-opus-5-5-max,claude-sonnet-5-5-high,claude-sonnet-5-5-medium,claude-sonnet-5-5-max,gemini-3.8-flash,gemini-3.8-flash-high",
@@ -365,37 +367,55 @@ def test_dynamic_env_var_override(monkeypatch: pytest.MonkeyPatch) -> None:
     expect_equal(modified_body["labels"]["proxy-auth-user"], "john_smith_example_com")
 
 
-def test_dynamic_custom_label_keys(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify dynamic custom label keys."""
-    monkeypatch.setenv("USER_LABEL_KEY", "custom-developer-id")
-    monkeypatch.setenv("PROJECT_LABEL_KEY", "custom-repo-name")
-    monkeypatch.setenv("AUTH_USER_LABEL_KEY", "custom-auth-caller")
+def test_billing_label_keys_remap_chat_labels(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify labels are read under the chat keys and written under the billing keys only."""
+    monkeypatch.setenv("BILLING_USER_LABEL_KEY", "custom-developer-id")
+    monkeypatch.setenv("BILLING_PROJECT_LABEL_KEY", "custom-repo-name")
+    monkeypatch.setenv("BILLING_AUTH_USER_LABEL_KEY", "custom-auth-caller")
 
-    path = GEMINI_PATH
     body = {
         "contents": [],
         "config": {
             "labels": {
-                "custom-repo-name": "ecommerce-frontend",
-                "custom-developer-id": "custom-alias",
+                "vscode-vertex-ai-project": "ecommerce-frontend",
+                "vscode-vertex-ai-user": "Custom Alias!",
             },
         },
     }
     _model_id, modified_body, extra_headers = validate_model_and_enforce_policy(
-        path,
+        GEMINI_PATH,
         body,
         "jane.doe@example.com",
     )
-    expect_equal(modified_body["labels"]["custom-repo-name"], "ecommerce-frontend")
-    expect_equal(modified_body["labels"]["custom-developer-id"], "custom-alias")
-    expect_equal(modified_body["labels"]["custom-auth-caller"], "jane_doe_example_com")
+    expected = {
+        "custom-repo-name": "ecommerce-frontend",
+        "custom-developer-id": "custom_alias_",
+        "custom-auth-caller": "jane_doe_example_com",
+    }
+    for key, value in expected.items():
+        expect_equal(modified_body["labels"][key], value)
+    expect_not_in("vscode-vertex-ai-user", modified_body["labels"])
+    expect_not_in("vscode-vertex-ai-project", modified_body["labels"])
 
     decoded = json.loads(
         base64.b64decode(extra_headers["X-Vertex-AI-Labels"]).decode("utf-8"),
     )
-    expect_equal(decoded["custom-repo-name"], "ecommerce-frontend")
-    expect_equal(decoded["custom-developer-id"], "custom-alias")
-    expect_equal(decoded["custom-auth-caller"], "jane_doe_example_com")
+    for key, value in expected.items():
+        expect_equal(decoded[key], value)
+    expect_not_in("vscode-vertex-ai-user", decoded)
+
+
+def test_missing_label_error_names_the_chat_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify the rejection tells clients which label to send, not the billing name."""
+    monkeypatch.setenv("BILLING_PROJECT_LABEL_KEY", "custom-repo-name")
+    with pytest.raises(GovernanceError) as excinfo:
+        validate_model_and_enforce_policy(
+            GEMINI_PATH,
+            {"labels": {"vscode-vertex-ai-user": "u"}},
+            "jane.doe@example.com",
+        )
+    expect_in("vscode-vertex-ai-project", excinfo.value.message)
+    expect_not_in("custom-repo-name", excinfo.value.message)
 
 
 @pytest.mark.parametrize(
@@ -403,9 +423,11 @@ def test_dynamic_custom_label_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     [
         ("ALLOWED_MODELS", "allowed_models"),
         ("ALLOWED_REGIONS", "allowed_regions"),
-        ("USER_LABEL_KEY", "user_label_key"),
-        ("PROJECT_LABEL_KEY", "project_label_key"),
-        ("AUTH_USER_LABEL_KEY", "auth_user_label_key"),
+        ("CHAT_USER_LABEL_KEY", "chat_user_label_key"),
+        ("CHAT_PROJECT_LABEL_KEY", "chat_project_label_key"),
+        ("BILLING_USER_LABEL_KEY", "billing_user_label_key"),
+        ("BILLING_PROJECT_LABEL_KEY", "billing_project_label_key"),
+        ("BILLING_AUTH_USER_LABEL_KEY", "billing_auth_user_label_key"),
         ("MODELS_CATALOG_URL", "models_catalog_url"),
         ("REQUIRE_PROJECT_LABEL", "require_project_label"),
         ("REQUIRE_USER_LABEL", "require_user_label"),

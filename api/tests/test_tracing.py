@@ -70,8 +70,10 @@ def trace_client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TraceClient]:
         "TRACE_EXPORT_TIMEOUT_MS": "1000",
         "HUB_PROJECT_ID": "test-hub",
         "ALLOWED_REGIONS": "global",
-        "USER_LABEL_KEY": "user",
-        "PROJECT_LABEL_KEY": "project",
+        "CHAT_USER_LABEL_KEY": "user",
+        "CHAT_PROJECT_LABEL_KEY": "project",
+        "BILLING_USER_LABEL_KEY": "user",
+        "BILLING_PROJECT_LABEL_KEY": "project",
         "MODELS_CATALOG_URL": "https://catalog.invalid",
     }.items():
         monkeypatch.setenv(key, value)

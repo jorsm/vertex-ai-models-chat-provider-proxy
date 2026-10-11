@@ -24,7 +24,7 @@ With `proxyUrl` set, the extension:
 1. Requests the model catalog from `GET /discovery` instead of using a built-in list.
 2. Authenticates with the user's personal `gcloud auth login` identity and sends a Google **ID token** as `Authorization: Bearer ...` on every call. There is no direct fallback to Vertex AI while `proxyUrl` is set.
 3. Sends Gemini and Claude inference requests to `/v1/projects/{projectId}/locations/{region}/publishers/{publisher}/models/{model}:{action}` on the proxy rather than on `aiplatform.googleapis.com`.
-4. Attaches the user and workspace labels (`vscode-vertex-ai-user`, `vscode-vertex-ai-project`) when label support is enabled in the extension, so they should match `USER_LABEL_KEY` and `PROJECT_LABEL_KEY`.
+4. Attaches the user and workspace labels (`vscode-vertex-ai-user`, `vscode-vertex-ai-project`) when label support is enabled in the extension, so they must match `CHAT_USER_LABEL_KEY` and `CHAT_PROJECT_LABEL_KEY` (the proxy remaps them to your billing label names).
 5. Retries only transient failures (429, 502, 503 and network errors) and shows other errors, including the proxy's `400` and `403` messages, to the user immediately.
 
 `vertexAiChat.projectId` must be a project the **proxy service account** can use for Vertex AI calls (normally the hub project). Refer to the extension's own documentation for the exact current behavior and for providers that do not yet support proxy mode.

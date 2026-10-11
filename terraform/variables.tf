@@ -65,19 +65,29 @@ variable "allowed_vertex_projects" {
   description = "Google Cloud project IDs clients may target on Vertex AI through the proxy; an empty list means only the hub project. Terraform does not grant IAM on other projects: give the proxy service account roles/aiplatform.user there"
 }
 
-variable "user_label_key" {
+variable "chat_user_label_key" {
   type        = string
-  description = "Label key used for tagging the client user in Vertex AI requests"
+  description = "Label key under which the chat client sends the user name; fixed by the extension, do not change"
 }
 
-variable "project_label_key" {
+variable "chat_project_label_key" {
   type        = string
-  description = "Label key used for tagging the workspace project in Vertex AI requests"
+  description = "Label key under which the chat client sends the workspace name; fixed by the extension, do not change"
 }
 
-variable "auth_user_label_key" {
+variable "billing_user_label_key" {
   type        = string
-  description = "Label key used for tagging the verified authenticated caller email in Vertex AI requests"
+  description = "Label key written to Vertex AI billing with the user name received from the chat client"
+}
+
+variable "billing_project_label_key" {
+  type        = string
+  description = "Label key written to Vertex AI billing with the workspace name received from the chat client"
+}
+
+variable "billing_auth_user_label_key" {
+  type        = string
+  description = "Label key written to Vertex AI billing with the verified caller email"
 }
 
 variable "models_catalog_url" {
@@ -87,12 +97,12 @@ variable "models_catalog_url" {
 
 variable "require_project_label" {
   type        = bool
-  description = "Whether the project label (vscode-vertex-ai-project) is strictly mandatory in client requests"
+  description = "Whether the chat project label (chat_project_label_key) is strictly mandatory in client requests"
 }
 
 variable "require_user_label" {
   type        = bool
-  description = "Whether the client user label (vscode-vertex-ai-user) is strictly mandatory in client requests"
+  description = "Whether the chat user label (chat_user_label_key) is strictly mandatory in client requests"
 }
 
 variable "max_context_tokens" {

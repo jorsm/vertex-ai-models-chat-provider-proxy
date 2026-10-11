@@ -102,20 +102,20 @@ api/
 └── tests/                     # pytest suite (unit, transport, tracing, live integration)
 
 terraform/
-├── providers.tf               # google and google-beta providers
-├── variables.tf               # Input variables (no defaults)
-├── outputs.tf                 # Service URL, service account, BigQuery objects, ...
-├── main_001_[projects].tf     # Hub project
-├── main_002_[services].tf     # API enablement
-├── main_003_[iam].tf          # Proxy service account and roles
-├── main_005_[budgets].tf      # Billing budget
-├── main_005_[notification_channels].tf
-├── main_007_[proxy_service].tf  # Cloud Run service, invokers, custom domain
-├── main_008_[usage_analytics].tf # BigQuery dataset, log sink, normalized view
-├── main_009_[observability].tf   # Log-based metrics, dashboard, alerts
-├── main_010_[tracing].tf         # Cloud Trace storage
-├── schemas/ai_usage_logs.json    # Bootstrap schema of the usage log table
-└── sql/ai_usage_events_normalized.sql # Reporting view
+├── providers.tf                        # google and google-beta providers
+├── variables.tf                        # Input variables (no defaults)
+├── outputs.tf                          # Service URL, service account, BigQuery objects, ...
+├── main_001_[projects].tf              # Hub project
+├── main_002_[services].tf              # API enablement
+├── main_003_[iam].tf                   # Proxy service account and roles
+├── main_005_[budgets].tf               # Billing budget
+├── main_005_[notification_channels].tf # Email notification channels
+├── main_007_[proxy_service].tf         # Cloud Run service, invokers, custom domain
+├── main_008_[usage_analytics].tf       # BigQuery dataset, log sink, normalized view
+├── main_009_[observability].tf         # Log-based metrics, dashboard, alerts
+├── main_010_[tracing].tf               # Cloud Trace storage
+├── schemas/ai_usage_logs.json          # Bootstrap schema of the usage log table
+└── sql/ai_usage_events_normalized.sql  # Reporting view
 ```
 
 ## Design decisions

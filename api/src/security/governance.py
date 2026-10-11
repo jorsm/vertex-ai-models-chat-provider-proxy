@@ -193,7 +193,13 @@ def _unwrap_config(body_json: dict[str, Any]) -> None:
 def _enforce_gemini_body(body_json: dict[str, Any], model_id: str, labels: dict[str, str]) -> None:
     """Inject the governance labels (and thinking level for -high aliases) into a Gemini body."""
     _unwrap_config(body_json)
-    _ensure_dict(body_json, "labels").update(labels)
+    body_labels = _ensure_dict(body_json, "labels")
+    # Client labels are remapped to the billing keys: drop the raw ones so unsanitized values never reach Vertex AI
+    for chat_key in (settings.chat_user_label_key, settings.chat_project_label_key):
+        if chat_key not in labels:
+            body_labels.pop(chat_key, None)
+            body_labels.pop(chat_key.lower(), None)
+    body_labels.update(labels)
 
     # Thinking model alias (-high): inject thinkingConfig HIGH into generationConfig
     if model_id.endswith(_HIGH_SUFFIX):
@@ -232,10 +238,6 @@ def validate_model_and_enforce_policy(
       GovernanceError(400) if model, project or region is not allowed or if required labels are missing.
 
     """
-    project_key = settings.project_label_key
-    user_key = settings.user_label_key
-    auth_user_key = settings.auth_user_label_key
-
     model_id = extract_model_id(path, body_json)
     if not model_id:
         raise GovernanceError(HTTPStatus.BAD_REQUEST, "No model specified in the request.")
@@ -261,11 +263,14 @@ def validate_model_and_enforce_policy(
             f"Region '{region}' is not in the approved list. Approved regions: {settings.allowed_regions}",
         )
 
+    chat_project_key = settings.chat_project_label_key
+    chat_user_key = settings.chat_user_label_key
+    # Values are read under the chat keys and written under the billing keys
     labels = {
-        project_key: _label_value(project_key, body_json, headers, lambda: settings.require_project_label),
-        user_key: _label_value(user_key, body_json, headers, lambda: settings.require_user_label),
+        settings.billing_project_label_key: _label_value(chat_project_key, body_json, headers, lambda: settings.require_project_label),
+        settings.billing_user_label_key: _label_value(chat_user_key, body_json, headers, lambda: settings.require_user_label),
         # Strictly the authenticated caller email from the Google OIDC token (non-forgeable)
-        auth_user_key: sanitize_gcp_label(user_email),
+        settings.billing_auth_user_label_key: sanitize_gcp_label(user_email),
         "managed-by": _MANAGED_BY,
     }
 
