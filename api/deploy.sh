@@ -6,13 +6,13 @@
 #   PROJECT_ID   Google Cloud project hosting the service (the hub project)
 #   REGION       Cloud Run region of the service
 # Optional:
-#   SERVICE_NAME Cloud Run service name (default: ai-companion-proxy)
+#   SERVICE_NAME Cloud Run service name (default: copilot-chat-proxy)
 #
 set -euo pipefail
 
 PROJECT_ID="${PROJECT_ID:?Set PROJECT_ID to the hub project ID}"
 REGION="${REGION:?Set REGION to the Cloud Run region}"
-SERVICE_NAME="${SERVICE_NAME:-ai-companion-proxy}"
+SERVICE_NAME="${SERVICE_NAME:-copilot-chat-proxy}"
 
 if ! command -v gcloud &>/dev/null; then
   echo "Error: Google Cloud SDK (gcloud) not found in PATH." >&2

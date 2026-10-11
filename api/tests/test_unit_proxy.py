@@ -501,7 +501,7 @@ class TestFlaskHttp:
         expect_equal(resp.status_code, 200)
         data = resp.get_json()
         expect_equal(data["status"], "healthy")
-        expect_equal(data["service"], "ai-companion-proxy")
+        expect_equal(data["service"], "copilot-chat-proxy")
         expect_equal(data["allowed_regions"], ["global"])
         expect_not_in("vertex_project", data)
 

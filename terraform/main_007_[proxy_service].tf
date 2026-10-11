@@ -4,7 +4,7 @@
 # Cloud Run service that runs the proxy: runtime settings passed as environment variables, invoker IAM bindings for the authorized identities and the custom domain mapping.
 # The service starts with a placeholder image; the real image is deployed by api/deploy.sh or api/deploy.ps1 and ignored by Terraform afterwards.
 
-resource "google_cloud_run_v2_service" "ai_companion_proxy" {
+resource "google_cloud_run_v2_service" "copilot_chat_proxy" {
   depends_on = [
     google_project_service.hub_services,
     google_project_iam_member.proxy_sa_vertex_user,
@@ -120,7 +120,7 @@ resource "google_cloud_run_v2_service" "ai_companion_proxy" {
 
   labels = {
     managed_by   = "terraform"
-    project      = "ai-companion"
+    project      = "copilot-chat-proxy"
     role         = "proxy"
     service_name = local.proxy_service_name
   }
@@ -143,7 +143,7 @@ resource "google_cloud_run_v2_service_iam_member" "proxy_invokers" {
 
   project  = google_project.hub_project.project_id
   location = var.region
-  name     = google_cloud_run_v2_service.ai_companion_proxy.name
+  name     = google_cloud_run_v2_service.copilot_chat_proxy.name
   role     = "roles/run.invoker"
   member   = each.value
 }
@@ -152,7 +152,7 @@ resource "google_cloud_run_v2_service_iam_member" "proxy_invokers" {
 # Preview feature, available only in some regions; the domain must already be verified in Search Console
 # by the identity running Terraform (https://docs.cloud.google.com/run/docs/mapping-custom-domains#run).
 resource "google_cloud_run_domain_mapping" "proxy_domain_mapping" {
-  depends_on = [google_cloud_run_v2_service.ai_companion_proxy]
+  depends_on = [google_cloud_run_v2_service.copilot_chat_proxy]
 
   location = var.region
   project  = google_project.hub_project.project_id
@@ -163,7 +163,7 @@ resource "google_cloud_run_domain_mapping" "proxy_domain_mapping" {
   }
 
   spec {
-    route_name = google_cloud_run_v2_service.ai_companion_proxy.name
+    route_name = google_cloud_run_v2_service.copilot_chat_proxy.name
   }
 
   lifecycle {

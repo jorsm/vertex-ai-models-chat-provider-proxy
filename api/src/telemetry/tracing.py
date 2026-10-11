@@ -92,7 +92,7 @@ def _build_provider() -> TracerProvider:
         sampler=TraceIdRatioBased(settings.trace_sampling_ratio),
         resource=Resource.create(
             {
-                "service.name": "ai-companion-proxy",
+                "service.name": "copilot-chat-proxy",
                 "service.version": os.getenv("K_REVISION") or "unknown",
                 "cloud.provider": "gcp",
                 "cloud.account.id": settings.hub_project_id,
@@ -125,7 +125,7 @@ def _get_tracer() -> trace.Tracer:
                     # Telemetry must never prevent inference, or expose credentials.
                     _log.warning("Cloud Trace initialization failed; request continues without export")
                 else:
-                    state.tracer = provider.get_tracer("ai-companion-proxy")
+                    state.tracer = provider.get_tracer("copilot-chat-proxy")
                     state.provider = provider
     return state.tracer
 

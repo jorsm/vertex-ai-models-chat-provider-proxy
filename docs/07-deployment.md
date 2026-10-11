@@ -50,15 +50,15 @@ The script runs Cloud Build on the `api/` directory (using its `Dockerfile`) and
 
 ```bash
 # Linux / macOS
-PROJECT_ID=my-ai-companion-hub REGION=europe-west1 ./api/deploy.sh
+PROJECT_ID=my-copilot-chat-proxy-hub REGION=europe-west1 ./api/deploy.sh
 ```
 
 ```powershell
 # Windows
-.\api\deploy.ps1 -ProjectId my-ai-companion-hub -Region europe-west1
+.\api\deploy.ps1 -ProjectId my-copilot-chat-proxy-hub -Region europe-west1
 ```
 
-`SERVICE_NAME` / `-ServiceName` default to `ai-companion-proxy`, which is the name Terraform uses.
+`SERVICE_NAME` / `-ServiceName` default to `copilot-chat-proxy`, which is the name Terraform uses.
 
 ## 3. Custom domain
 
@@ -92,8 +92,8 @@ Then run the live integration tests ([Development and testing](09-development-an
 Any container platform works as long as the environment variables of [Configuration](06-configuration.md) are provided. The image serves the Flask app `main:app` with Gunicorn (one worker, eight threads, no request timeout so long streams are not cut).
 
 ```bash
-docker build -t ai-companion-proxy ./api
-docker run --rm -p 8080:8080 --env-file proxy.env ai-companion-proxy
+docker build -t copilot-chat-proxy ./api
+docker run --rm -p 8080:8080 --env-file proxy.env copilot-chat-proxy
 ```
 
 On Google Cloud outside Cloud Run you must provide runtime credentials with Vertex AI access (Application Default Credentials).

@@ -16,7 +16,7 @@ resource "google_bigquery_dataset" "ai_usage" {
 
   labels = {
     managed_by = "terraform"
-    project    = "ai-companion"
+    project    = "copilot-chat-proxy"
     role       = "usage-analytics"
   }
 }

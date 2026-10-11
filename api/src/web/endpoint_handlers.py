@@ -14,7 +14,7 @@ def health() -> Response:
     return jsonify(
         {
             "status": "healthy",
-            "service": "ai-companion-proxy",
+            "service": "copilot-chat-proxy",
             "runtime": "python-3.14",
             "allowed_regions": settings.allowed_regions,
             "endpoints": {

@@ -49,7 +49,7 @@ def log_event(severity: str, message: str, request: Request | None = None, **fie
     log_entry: dict[str, Any] = {
         "severity": severity.upper(),
         "message": message,
-        "component": "ai-companion-proxy",
+        "component": "copilot-chat-proxy",
         "timestamp": time.time(),
     }
 

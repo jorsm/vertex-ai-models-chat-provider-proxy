@@ -14,7 +14,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$ProjectId,
     [Parameter(Mandatory = $true)][string]$Region,
-    [string]$ServiceName = "ai-companion-proxy"
+    [string]$ServiceName = "copilot-chat-proxy"
 )
 
 $ErrorActionPreference = "Stop"

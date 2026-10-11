@@ -4,7 +4,7 @@
 # on OpenAPI Viewer (https://www.openapiviewer.com).
 #
 # Required environment variable:
-#   PROXY_URL   Base URL of the deployed proxy, e.g. https://ai-companion-proxy-xxxx.a.run.app
+#   PROXY_URL   Base URL of the deployed proxy, e.g. https://copilot-chat-proxy-xxxx.a.run.app
 #
 set -euo pipefail
 

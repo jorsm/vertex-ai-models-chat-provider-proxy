@@ -11,7 +11,7 @@ To run the live integration tests, set the proxy URL and the hub project, and au
 
 ```bash
 gcloud auth login
-export PROXY_SERVICE_URI=https://your-proxy.example.com HUB_PROJECT_ID=my-ai-companion-hub
+export PROXY_SERVICE_URI=https://your-proxy.example.com HUB_PROJECT_ID=my-copilot-chat-proxy-hub
 pytest api/tests/test_integration_proxy.py -v
 ```
 

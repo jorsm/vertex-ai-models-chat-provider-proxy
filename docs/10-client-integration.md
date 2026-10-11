@@ -14,8 +14,8 @@ Set the extension's proxy URL to the base URL of your proxy (`terraform output p
 
 ```json
 {
-  "vertexAiChat.proxyUrl": "https://ai-companion-proxy.example.com",
-  "vertexAiChat.projectId": "my-ai-companion-hub"
+  "vertexAiChat.proxyUrl": "https://copilot-chat-proxy.example.com",
+  "vertexAiChat.projectId": "my-copilot-chat-proxy-hub"
 }
 ```
 
@@ -36,7 +36,7 @@ For command-line tests and other clients:
 ```bash
 gcloud auth login
 TOKEN=$(gcloud auth print-identity-token)
-curl -H "Authorization: Bearer $TOKEN" https://ai-companion-proxy.example.com/discovery
+curl -H "Authorization: Bearer $TOKEN" https://copilot-chat-proxy.example.com/discovery
 ```
 
 Libraries such as `google-auth` (`id_token.fetch_id_token`) or `google-auth-library` (`getIdTokenClient`) obtain tokens programmatically. The audience must be accepted by Cloud Run IAM (the service URL, or a custom audience configured on the service).
@@ -46,7 +46,7 @@ Libraries such as `google-auth` (`id_token.fetch_id_token`) or `google-auth-libr
 ```bash
 curl -N -X POST \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  "https://ai-companion-proxy.example.com/v1/projects/my-ai-companion-hub/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse" \
+  "https://copilot-chat-proxy.example.com/v1/projects/my-copilot-chat-proxy-hub/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse" \
   -d '{
         "contents": [{"role": "user", "parts": [{"text": "Say hello"}]}],
         "labels": {"vscode-vertex-ai-user": "jane", "vscode-vertex-ai-project": "my-repo"}

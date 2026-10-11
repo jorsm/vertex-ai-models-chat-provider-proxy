@@ -21,7 +21,7 @@ The proxy is meant for non-browser clients and sends no CORS headers.
 ```json
 {
   "status": "healthy",
-  "service": "ai-companion-proxy",
+  "service": "copilot-chat-proxy",
   "runtime": "python-3.14",
   "allowed_regions": ["global"],
   "endpoints": { "discovery": "/discovery", "openapi": "/openapi.json", "health": "/health" }

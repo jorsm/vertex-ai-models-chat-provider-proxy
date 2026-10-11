@@ -22,7 +22,7 @@ Python 3.14 is the target runtime (`ruff.toml` sets `target-version = "py314"`).
 All required environment variables must be set (see [Configuration](06-configuration.md)); `LOCAL_DEV_BYPASS=true` removes the need for a real Google token, and `TRACE_ENABLED=false` avoids Cloud Trace calls.
 
 ```bash
-export HUB_PROJECT_ID=my-ai-companion-hub ALLOWED_REGIONS=global \
+export HUB_PROJECT_ID=my-copilot-chat-proxy-hub ALLOWED_REGIONS=global \
        ALLOWED_MODELS=gemini-3.8-flash USER_LABEL_KEY=vscode-vertex-ai-user \
        PROJECT_LABEL_KEY=vscode-vertex-ai-project AUTH_USER_LABEL_KEY=proxy-auth-user \
        REQUIRE_USER_LABEL=true REQUIRE_PROJECT_LABEL=true \
@@ -71,7 +71,7 @@ Assertions use the helpers in `tests/checks.py` (`expect`, `expect_equal`, `expe
 
 ```bash
 gcloud auth login
-export PROXY_SERVICE_URI=https://your-proxy.example.com HUB_PROJECT_ID=my-ai-companion-hub
+export PROXY_SERVICE_URI=https://your-proxy.example.com HUB_PROJECT_ID=my-copilot-chat-proxy-hub
 pytest api/tests/test_integration_proxy.py -v
 ```
 

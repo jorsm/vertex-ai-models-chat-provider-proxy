@@ -16,7 +16,7 @@ output "hub_project_number" {
 
 output "proxy_service_uri" {
   description = "Public HTTPS URI of the deployed Google Agent Platform for Copilot Chat - Proxy Cloud Run service"
-  value       = google_cloud_run_v2_service.ai_companion_proxy.uri
+  value       = google_cloud_run_v2_service.copilot_chat_proxy.uri
 }
 
 output "proxy_service_account_email" {

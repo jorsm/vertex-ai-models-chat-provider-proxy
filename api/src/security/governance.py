@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 _MODEL_POLICY_SUFFIXES = ("-high", "-medium", "-max")
 _HIGH_SUFFIX = "-high"
 _MAX_LABEL_LENGTH = 63
-_MANAGED_BY = "ai-companion-proxy"
+_MANAGED_BY = "copilot-chat-proxy"
 _CONFIG_PASSTHROUGH_KEYS = ("generationConfig", "systemInstruction", "tools", "safetySettings")
 
 

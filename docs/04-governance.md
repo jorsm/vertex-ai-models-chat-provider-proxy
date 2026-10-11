@@ -41,7 +41,7 @@ Three labels are enforced, using key names taken from configuration:
 | `PROJECT_LABEL_KEY` | Workspace or repository being worked on | Sent by the client |
 | `AUTH_USER_LABEL_KEY` | Authenticated caller | **Derived from the verified token** |
 
-A fourth label, `managed-by = ai-companion-proxy`, marks traffic that went through the proxy.
+A fourth label, `managed-by = copilot-chat-proxy`, marks traffic that went through the proxy.
 
 - `REQUIRE_USER_LABEL` / `REQUIRE_PROJECT_LABEL` decide whether a missing client label is an error (`Missing required label '<key>'`) or is replaced by the value `default`.
 - Label values are sanitized to the Google Cloud label rules: lowercase letters, digits, `_` and `-`; at most 63 characters; they must start with a letter (a `v_` prefix is added otherwise); empty input becomes `unknown`. For example `jane.doe@example.com` becomes `jane_doe_example_com`.

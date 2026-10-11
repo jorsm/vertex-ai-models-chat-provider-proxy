@@ -11,7 +11,7 @@ resource "google_service_account" "proxy_sa" {
   ]
 
   project      = google_project.hub_project.project_id
-  account_id   = "sa-ai-companion-proxy"
+  account_id   = "sa-copilot-chat-proxy"
   display_name = "Google Agent Platform for Copilot Chat - Proxy Service Account"
   description  = "Service Account used by the Google Agent Platform for Copilot Chat - Proxy Cloud Run service to invoke Vertex AI APIs"
 }

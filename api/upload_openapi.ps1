@@ -3,7 +3,7 @@
     Download the OpenAPI 3.0.3 specification from the (IAM-protected) proxy and publish it
     on OpenAPI Viewer (https://www.openapiviewer.com).
 .PARAMETER ProxyUrl
-    Base URL of the deployed proxy, e.g. https://ai-companion-proxy-xxxx.a.run.app
+    Base URL of the deployed proxy, e.g. https://copilot-chat-proxy-xxxx.a.run.app
 #>
 param(
     [Parameter(Mandatory = $true)][string]$ProxyUrl

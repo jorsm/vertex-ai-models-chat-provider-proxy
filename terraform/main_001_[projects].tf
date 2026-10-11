@@ -12,7 +12,7 @@ resource "google_project" "hub_project" {
 
   labels = {
     managed_by = "terraform"
-    project    = "ai-companion"
+    project    = "copilot-chat-proxy"
     role       = "hub"
   }
 }

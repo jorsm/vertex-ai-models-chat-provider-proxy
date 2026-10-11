@@ -29,7 +29,7 @@ class TestHealthAndAuth:
         expect_equal(resp.status_code, 200, f"Healthcheck failed: {resp.text}")
         data = resp.json()
         expect_equal(data.get("status"), "healthy")
-        expect_equal(data.get("service"), "ai-companion-proxy")
+        expect_equal(data.get("service"), "copilot-chat-proxy")
         expect_equal(data.get("allowed_regions"), ["global"])
         expect_equal(data.get("endpoints", {}).get("discovery"), "/discovery")
         expect_equal(data.get("endpoints", {}).get("openapi"), "/openapi.json")

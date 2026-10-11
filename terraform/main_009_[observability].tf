@@ -4,11 +4,11 @@
 # Observability: log-based metrics derived from the proxy logs, the Cloud Monitoring dashboard and the alert policies for proxy errors, missing usage data, latency and usage sink export failures.
 
 locals {
-  proxy_service_name = "ai-companion-proxy"
+  proxy_service_name = "copilot-chat-proxy"
   proxy_log_filter   = <<-EOT
     resource.type="cloud_run_revision"
     resource.labels.service_name="${local.proxy_service_name}"
-    jsonPayload.component="ai-companion-proxy"
+    jsonPayload.component="copilot-chat-proxy"
     jsonPayload.event_kind="inference_completed"
     jsonPayload.telemetry_schema_version=1
   EOT

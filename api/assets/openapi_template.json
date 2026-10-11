@@ -183,7 +183,7 @@
           },
           "service": {
             "type": "string",
-            "example": "ai-companion-proxy"
+            "example": "copilot-chat-proxy"
           },
           "runtime": {
             "type": "string",
