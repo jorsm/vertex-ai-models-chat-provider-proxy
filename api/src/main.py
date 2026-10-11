@@ -1,4 +1,4 @@
-"""WSGI application for the AI Companion proxy (Cloud Run / Gunicorn entry point `main:app`)."""
+"""WSGI application for the Google Agent Platform for Copilot Chat proxy (Cloud Run / Gunicorn entry point `main:app`)."""
 
 import os
 

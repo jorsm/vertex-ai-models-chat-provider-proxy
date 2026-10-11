@@ -1,3 +1,3 @@
-"""API package for the AI Companion proxy."""
+"""API package for the Google Agent Platform for Copilot Chat proxy."""
 
 # Package marker for api

@@ -1,5 +1,5 @@
 ############################################################
-# CLOUD RUN SERVICE: AI COMPANION PROXY
+# CLOUD RUN SERVICE: GOOGLE AGENT PLATFORM FOR COPILOT CHAT - PROXY
 ############################################################
 # Cloud Run service that runs the proxy: runtime settings passed as environment variables, invoker IAM bindings for the authorized identities and the custom domain mapping.
 # The service starts with a placeholder image; the real image is deployed by api/deploy.sh or api/deploy.ps1 and ignored by Terraform afterwards.
@@ -16,7 +16,7 @@ resource "google_cloud_run_v2_service" "ai_companion_proxy" {
   name        = local.proxy_service_name
   location    = var.region
   project     = google_project.hub_project.project_id
-  description = "Centralized Vertex AI Companion Proxy Relay"
+  description = "Google Agent Platform for Copilot Chat - Proxy"
   ingress     = "INGRESS_TRAFFIC_ALL"
 
   template {
@@ -148,7 +148,7 @@ resource "google_cloud_run_v2_service_iam_member" "proxy_invokers" {
   member   = each.value
 }
 
-# Custom domain mapping on Cloud Run for the AI Companion Proxy.
+# Custom domain mapping on Cloud Run for the Google Agent Platform for Copilot Chat - Proxy.
 # Preview feature, available only in some regions; the domain must already be verified in Search Console
 # by the identity running Terraform (https://docs.cloud.google.com/run/docs/mapping-custom-domains#run).
 resource "google_cloud_run_domain_mapping" "proxy_domain_mapping" {

@@ -1,11 +1,11 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "AI Companion Proxy API",
+    "title": "Google Agent Platform for Copilot Chat - Proxy API",
     "version": "1.0.0",
     "description": "Centralized, enterprise-governed AI Proxy and Relay for Google Vertex AI. Enforces Google OIDC authentication, model allowlisting, cost attribution labels, and zero-buffering streaming passthrough.",
     "contact": {
-      "name": "AI Companion Proxy Maintainers"
+      "name": "Google Agent Platform for Copilot Chat - Proxy Maintainers"
     }
   },
   "tags": [

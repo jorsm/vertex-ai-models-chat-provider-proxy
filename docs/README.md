@@ -1,4 +1,4 @@
-# AI Companion Proxy documentation
+# Google Agent Platform for Copilot Chat - Proxy documentation
 
 The documentation is organized in thematic chapters. Read them in order for a complete picture, or jump to the one you need.
 

@@ -75,7 +75,7 @@ locals {
 # metric counts errors for this sink, including routing/schema failures.
 resource "google_monitoring_alert_policy" "usage_sink_export_errors" {
   project      = google_project.hub_project.project_id
-  display_name = "AI Companion Proxy - usage sink export errors"
+  display_name = "Google Agent Platform for Copilot Chat - Proxy - usage sink export errors"
   combiner     = "OR"
   notification_channels = [
     for channel in google_monitoring_notification_channel.notification_email : channel.id
@@ -168,7 +168,7 @@ resource "google_logging_metric" "proxy_distribution" {
 resource "google_monitoring_dashboard" "proxy_observability" {
   project = google_project.hub_project.project_id
   dashboard_json = jsonencode({
-    displayName = "AI Companion Proxy — Usage and Reliability"
+    displayName = "Google Agent Platform for Copilot Chat - Proxy — Usage and Reliability"
     gridLayout = {
       # The Monitoring API serializes this int64 field as a JSON string.
       columns = "2"
@@ -202,7 +202,7 @@ resource "google_monitoring_alert_policy" "proxy_operational" {
   for_each = local.proxy_alerts
 
   project      = google_project.hub_project.project_id
-  display_name = "AI Companion Proxy — ${each.key}"
+  display_name = "Google Agent Platform for Copilot Chat - Proxy — ${each.key}"
   combiner     = "OR"
   enabled      = true
   notification_channels = [
@@ -211,7 +211,7 @@ resource "google_monitoring_alert_policy" "proxy_operational" {
 
   documentation {
     mime_type = "text/markdown"
-    content   = "${each.value.description}. Inspect the AI Companion Proxy dashboard and inference_completed logs. Cost metrics are estimates; BigQuery retains per-invocation details."
+    content   = "${each.value.description}. Inspect the Google Agent Platform for Copilot Chat - Proxy dashboard and inference_completed logs. Cost metrics are estimates; BigQuery retains per-invocation details."
   }
 
   conditions {

@@ -1,4 +1,4 @@
-"""Unit tests for AI Companion Proxy (Python 3.14)."""
+"""Unit tests for Google Agent Platform for Copilot Chat - Proxy (Python 3.14)."""
 
 import base64
 import json

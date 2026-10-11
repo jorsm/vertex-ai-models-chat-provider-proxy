@@ -7,7 +7,7 @@
 
 ## The problem
 
-Organizations that give developers an AI coding assistant backed by **Google Cloud Vertex AI** (for example through the open-source [Vertex AI Models Chat Provider](https://github.com/jorsm/vertex-ai-models-chat-provider) extension for VS Code) usually start with the simplest model: every developer authenticates with their own Google credentials and calls the Vertex AI REST APIs directly. This works, but it breaks down quickly:
+Organizations that give developers an AI coding assistant backed by **Google Cloud Vertex AI** (for example through the open-source [Google Agent Platform for Copilot Chat](https://marketplace.visualstudio.com/items?itemName=jorsm.vertex-ai-models-chat-provider) extension for VS Code) usually start with the simplest model: every developer authenticates with their own Google credentials and calls the Vertex AI REST APIs directly. This works, but it breaks down quickly:
 
 1. **No reliable cost attribution.** Vertex AI usage can be labelled per user and per project, but the client-side setting that sends those labels is optional and under the control of each user. Significant spend ends up on the bill with no label at all, so costs cannot be split by person, team or cost center.
 2. **"One Google Cloud project per user" does not scale.** Creating a project for every developer restores some attribution, but it multiplies projects, IAM bindings, log sinks and budget alerts. Third-party models (for example Anthropic Claude in Model Garden) additionally require terms acceptance and enablement per project, which forces manual steps on every developer. Models enabled in a user's project stay available indefinitely, so costly or obsolete models cannot be retired centrally.
@@ -15,7 +15,7 @@ Organizations that give developers an AI coding assistant backed by **Google Clo
 
 ## The solution
 
-The **AI Companion Proxy** is a small serverless relay deployed once, in a central *hub* project:
+The **Google Agent Platform for Copilot Chat - Proxy** is a small serverless relay deployed once, in a central *hub* project:
 
 - Developers authenticate **to the proxy** with a Google ID token (OIDC). Cloud Run IAM decides who may invoke it.
 - The proxy verifies the caller, applies the **model and region allowlists**, **injects the cost-attribution labels** (including a non-forgeable label derived from the verified identity) and forwards the call to Vertex AI using its **own service account**.
@@ -39,7 +39,7 @@ flowchart LR
         V1 --> B1[Billing: partially labelled]
     end
     subgraph After["Through the proxy"]
-        D2[Developer + VS Code] -->|"Google ID token"| P[AI Companion Proxy]
+        D2[Developer + VS Code] -->|"Google ID token"| P[Google Agent Platform for Copilot Chat - Proxy]
         P -->|"proxy service account<br/>+ enforced labels"| V2[Vertex AI]
         V2 --> B2[Billing: 100% labelled]
         P --> L[Cloud Logging] --> BQ[BigQuery / metrics / alerts]

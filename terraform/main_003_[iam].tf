@@ -4,7 +4,7 @@
 # Creates the proxy runtime service account and grants it its roles: Vertex AI User on the hub project (when the hub is an allowed Vertex project), Log Writer and Cloud Trace Agent.
 # Also resolves the list of Vertex AI projects the proxy accepts; IAM on other projects is managed outside Terraform.
 
-# Dedicated Service Account for the AI Companion Proxy Cloud Run service
+# Dedicated Service Account for the Google Agent Platform for Copilot Chat - Proxy Cloud Run service
 resource "google_service_account" "proxy_sa" {
   depends_on = [
     google_project_service.hub_services
@@ -12,8 +12,8 @@ resource "google_service_account" "proxy_sa" {
 
   project      = google_project.hub_project.project_id
   account_id   = "sa-ai-companion-proxy"
-  display_name = "AI Companion Proxy Service Account"
-  description  = "Service Account used by the AI Companion Proxy Cloud Run service to invoke Vertex AI APIs"
+  display_name = "Google Agent Platform for Copilot Chat - Proxy Service Account"
+  description  = "Service Account used by the Google Agent Platform for Copilot Chat - Proxy Cloud Run service to invoke Vertex AI APIs"
 }
 
 # Vertex AI projects the proxy accepts: the hub project unless var.allowed_vertex_projects lists others.

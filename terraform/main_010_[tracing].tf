@@ -7,7 +7,7 @@ resource "google_observability_bucket" "proxy_traces" {
   project      = google_project.hub_project.project_id
   location     = var.proxy_trace_storage_location
   bucket_id    = "_Trace"
-  display_name = "AI Companion traces"
-  description  = "Application spans for AI Companion Proxy component latency"
+  display_name = "Copilot Chat Proxy traces"
+  description  = "Application spans for Google Agent Platform for Copilot Chat - Proxy component latency"
   depends_on   = [google_project_service.hub_services]
 }

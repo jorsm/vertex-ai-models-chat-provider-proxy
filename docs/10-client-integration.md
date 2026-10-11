@@ -6,7 +6,7 @@
 - [Example: Claude labels](#example-claude-labels)
 - [Handling errors](#handling-errors)
 
-The proxy speaks the native Vertex AI REST protocol on `/v1/projects/...`, so any client that can change its base URL and attach a Google ID token can use it. The reference client is the open-source [Vertex AI Models Chat Provider](https://github.com/jorsm/vertex-ai-models-chat-provider) extension for VS Code, which exposes a setting for this purpose.
+The proxy speaks the native Vertex AI REST protocol on `/v1/projects/...`, so any client that can change its base URL and attach a Google ID token can use it. The reference client is the open-source [Google Agent Platform for Copilot Chat](https://marketplace.visualstudio.com/items?itemName=jorsm.vertex-ai-models-chat-provider) extension for VS Code, which exposes a setting for this purpose.
 
 ## VS Code extension
 

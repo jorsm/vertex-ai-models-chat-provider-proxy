@@ -176,7 +176,7 @@ def forward_to_vertex(
         upstream_headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": headers.get("content-type", "application/json"),
-            "User-Agent": "Vertex-AI-Companion-Proxy/1.0",
+            "User-Agent": "Google-Agent-Platform-for-Copilot-Chat-Proxy/1.0",
             "Accept-Encoding": "identity",
         }
         for header_name in ("x-vertex-ai-labels", "accept"):

@@ -1,4 +1,4 @@
-"""Configuration settings for the Vertex AI Companion Proxy.
+"""Configuration settings for the Google Agent Platform for Copilot Chat - Proxy.
 
 Require all governance settings from environment variables, with no defaults.
 Target Python 3.14+.

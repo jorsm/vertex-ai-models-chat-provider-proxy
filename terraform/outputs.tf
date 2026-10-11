@@ -5,7 +5,7 @@
 #
 
 output "hub_project_id" {
-  description = "Project ID of the central Hub project hosting the AI Companion Proxy"
+  description = "Project ID of the central Hub project hosting the Google Agent Platform for Copilot Chat - Proxy"
   value       = google_project.hub_project.project_id
 }
 
@@ -15,12 +15,12 @@ output "hub_project_number" {
 }
 
 output "proxy_service_uri" {
-  description = "Public HTTPS URI of the deployed AI Companion Proxy Cloud Run service"
+  description = "Public HTTPS URI of the deployed Google Agent Platform for Copilot Chat - Proxy Cloud Run service"
   value       = google_cloud_run_v2_service.ai_companion_proxy.uri
 }
 
 output "proxy_service_account_email" {
-  description = "Email of the Service Account used by the AI Companion Proxy"
+  description = "Email of the Service Account used by the Google Agent Platform for Copilot Chat - Proxy"
   value       = google_service_account.proxy_sa.email
 }
 
@@ -57,12 +57,12 @@ output "hub_project_budget" {
 }
 
 output "proxy_invoker_identities" {
-  description = "List of developer emails authorized to invoke the AI Companion Proxy"
+  description = "List of developer emails authorized to invoke the Google Agent Platform for Copilot Chat - Proxy"
   value       = var.proxy_invoker_identities
 }
 
 output "custom_domain_url" {
-  description = "Custom domain HTTPS URL for the AI Companion Proxy"
+  description = "Custom domain HTTPS URL for the Google Agent Platform for Copilot Chat - Proxy"
   value       = "https://${var.custom_domain}"
 }
 

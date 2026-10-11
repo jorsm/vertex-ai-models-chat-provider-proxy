@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for AI Companion Proxy (Python 3.14)
+# Multi-stage Dockerfile for Google Agent Platform for Copilot Chat - Proxy (Python 3.14)
 FROM python:3.14-slim AS base
 
 ENV PYTHONUNBUFFERED=1 \

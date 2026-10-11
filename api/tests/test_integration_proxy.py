@@ -1,4 +1,4 @@
-"""End-to-End Integration Tests for Deployed AI Companion Proxy on Google Cloud.
+"""End-to-End Integration Tests for Deployed Google Agent Platform for Copilot Chat - Proxy on Google Cloud.
 
 Validates all enterprise constraints:
 - Missing / invalid authentication (401)

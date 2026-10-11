@@ -1,12 +1,12 @@
-# AI Companion Manager <!-- omit in toc -->
+# Google Agent Platform for Copilot Chat - Proxy <!-- omit in toc -->
 
 A governance proxy for AI coding assistants backed by **Google Cloud Vertex AI**, plus the Terraform to run it.
 
-Developers authenticate to a central **Cloud Run proxy** instead of calling Vertex AI directly. The proxy verifies who they are, enforces which models and regions may be used, injects non-forgeable cost-attribution labels, streams the answer back without buffering, and records token usage and estimated cost for every call. It is designed for the [Vertex AI Models Chat Provider](https://github.com/jorsm/vertex-ai-models-chat-provider) VS Code extension but speaks the native Vertex AI REST protocol, so other clients can use it too.
+Developers authenticate to a central **Cloud Run proxy** instead of calling Vertex AI directly. The proxy verifies who they are, enforces which models and regions may be used, injects non-forgeable cost-attribution labels, streams the answer back without buffering, and records token usage and estimated cost for every call. It is designed for the [Google Agent Platform for Copilot Chat](https://marketplace.visualstudio.com/items?itemName=jorsm.vertex-ai-models-chat-provider) VS Code extension but speaks the native Vertex AI REST protocol, so other clients can use it too.
 
 ```mermaid
 flowchart LR
-    Dev["Developer<br/>(VS Code)"] -->|"Google ID token"| Proxy["AI Companion Proxy<br/>(Cloud Run)"]
+    Dev["Developer<br/>(VS Code)"] -->|"Google ID token"| Proxy["Google Agent Platform for Copilot Chat - Proxy<br/>(Cloud Run)"]
     Proxy -->|"service account<br/>+ enforced labels"| Vertex["Vertex AI<br/>Gemini, Claude"]
     Proxy --> Logs["Cloud Logging"] --> BQ["BigQuery, metrics, alerts"]
 ```

@@ -1,4 +1,4 @@
-"""Load the OpenAPI 3.0.3 specification for the AI Companion Proxy.
+"""Load the OpenAPI 3.0.3 specification for the Google Agent Platform for Copilot Chat - Proxy.
 
 Populate the static template with runtime settings.
 """

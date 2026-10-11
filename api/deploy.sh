@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Build and deploy the AI Companion Proxy Cloud Run service with Cloud Build.
+# Build and deploy the Google Agent Platform for Copilot Chat - Proxy Cloud Run service with Cloud Build.
 #
 # Required environment variables:
 #   PROJECT_ID   Google Cloud project hosting the service (the hub project)

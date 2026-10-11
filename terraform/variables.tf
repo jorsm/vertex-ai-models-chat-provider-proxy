@@ -15,7 +15,7 @@ variable "folder_id" {
 
 variable "project_id" {
   type        = string
-  description = "Google Cloud project ID hosting the AI Companion Hub"
+  description = "Google Cloud project ID hosting the proxy"
 }
 
 variable "billing_account_id" {
@@ -47,7 +47,7 @@ variable "custom_domain" {
 }
 
 #
-# ------------------ AI COMPANION GOVERNANCE & POLICIES ------------------
+# ------------------ GOVERNANCE & POLICIES ------------------
 #
 
 variable "allowed_models" {

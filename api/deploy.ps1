@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Build and deploy the AI Companion Proxy Cloud Run service.
+    Build and deploy the Google Agent Platform for Copilot Chat - Proxy Cloud Run service.
 .DESCRIPTION
     Uses Cloud Build to create the image from the Dockerfile in the api folder and updates
     the existing service, leaving IAM and configuration to Terraform.

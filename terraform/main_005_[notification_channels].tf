@@ -7,7 +7,7 @@ resource "google_monitoring_notification_channel" "notification_email" {
   for_each = toset(var.notification_emails)
 
   project      = google_project.hub_project.project_id
-  display_name = "AI Companion Notifications - ${each.value}"
+  display_name = "Copilot Chat Proxy Notifications - ${each.value}"
   description  = "Shared notifications for billing budgets, Monitoring alerts and Error Reporting"
   type         = "email"
 

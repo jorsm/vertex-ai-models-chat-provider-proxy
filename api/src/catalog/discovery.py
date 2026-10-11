@@ -1,4 +1,4 @@
-"""Discovery engine for AI Companion models.
+"""Discovery engine for the proxy model catalog.
 
 Downloads models.json from the configured models catalog URL on invocation,
 filters models based on the enterprise allowlist, and caches the result in memory.
@@ -34,7 +34,7 @@ def _download_catalog(catalog_url: str) -> dict[str, Any] | None:
     try:
         response = httpx.get(
             catalog_url,
-            headers={"User-Agent": "AI-Companion-Proxy/1.0"},
+            headers={"User-Agent": "Google-Agent-Platform-for-Copilot-Chat-Proxy/1.0"},
             timeout=_REQUEST_TIMEOUT_SECONDS,
         )
         response.raise_for_status()

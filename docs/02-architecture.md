@@ -17,7 +17,7 @@ flowchart TD
 
     subgraph Hub["Hub project (Terraform)"]
         IAM["Cloud Run IAM<br/>roles/run.invoker"]
-        subgraph Proxy["AI Companion Proxy (Cloud Run)"]
+        subgraph Proxy["Google Agent Platform for Copilot Chat - Proxy (Cloud Run)"]
             AUTH["Authentication"]
             GOV["Governance and labels"]
             LIMIT["Context limit"]

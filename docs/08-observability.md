@@ -79,7 +79,7 @@ Log-based metrics (prefix `ai_proxy_`), labelled by upstream model, provider, re
 - **Counters:** requests, errors, rejections, interrupted streams, missing usage.
 - **Distributions:** duration, time to first chunk, time to first token, each token counter, and the estimated cost components in USD.
 
-The **dashboard** "AI Companion Proxy — Usage and Reliability" charts five-minute counts, p50/p95 latencies and mean tokens and cost per invocation. Email addresses, workspaces and IDs stay in the full payload and are not metric labels.
+The **dashboard** "Google Agent Platform for Copilot Chat - Proxy — Usage and Reliability" charts five-minute counts, p50/p95 latencies and mean tokens and cost per invocation. Email addresses, workspaces and IDs stay in the full payload and are not metric labels.
 
 | Alert | Variable | Condition |
 | --- | --- | --- |
