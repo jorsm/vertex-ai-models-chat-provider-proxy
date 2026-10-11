@@ -1,0 +1,324 @@
+[
+  {
+    "name": "timestamp",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "jsonPayload",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "fields": [
+      {
+        "name": "event_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "event_kind",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "request_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "trace_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "provider_response_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "principal_subject",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "principal_email",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "principal_display_name",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "client_user_label",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "workspace_label",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "effective_labels_json",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "provider",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "vertex_region",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "endpoint_action",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "model_requested",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "model_upstream",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "model_family",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "model_version",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "max_input_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "max_output_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "model_metadata_json",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "request_started_at",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "response_completed_at",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "duration_ms",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "time_to_first_chunk_ms",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "time_to_first_token_ms",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "http_status",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "outcome",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "stream_completed",
+        "type": "BOOLEAN",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "usage_complete",
+        "type": "BOOLEAN",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "input_tokens_total",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "input_tokens_uncached",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "cache_read_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "cache_write_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "cache_write_5m_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "cache_write_1h_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "output_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "thinking_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "tool_use_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "billable_output_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "total_tokens",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "provider_usage_json",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "currency",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "pricing_source",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "pricing_rule_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "input_price_per_million",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "output_price_per_million",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "cache_read_price_per_million",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "cache_write_price_per_million",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "estimated_input_cost",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "estimated_input_cost_decimal",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "estimated_output_cost",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "estimated_output_cost_decimal",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "estimated_cache_read_cost",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "estimated_cache_read_cost_decimal",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "estimated_cache_write_cost",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "estimated_cache_write_cost_decimal",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "estimated_total_cost",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "estimated_total_cost_decimal",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "schema_version",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "telemetry_schema_version",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "service_version",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      }
+    ]
+  }
+]

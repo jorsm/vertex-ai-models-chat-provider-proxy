@@ -1,0 +1,140 @@
+#
+# Copy this file to terraform.tfvars and replace every placeholder.
+# terraform.tfvars is git-ignored: never commit real project IDs, billing accounts or identities.
+# Every variable is required: there are no defaults.
+#
+
+#
+# ------------------ ENVIRONMENT ------------------
+#
+
+# Numeric ID of the Google Cloud folder where the hub project is created
+# (Console > IAM & Admin > Manage resources, or: gcloud resource-manager folders list --organization=ORG_ID)
+folder_id = "123456789012"
+
+#
+# ------------------ PROJECT & USERS ------------------
+#
+
+# ID of the hub project to create: globally unique, 6-30 characters, lowercase letters, digits and hyphens
+project_id = "my-ai-companion-hub"
+
+# Billing account linked to the hub project, in the form XXXXXX-XXXXXX-XXXXXX
+# (gcloud billing accounts list). You need permission to link projects to it.
+billing_account_id = "AAAAAA-BBBBBB-CCCCCC"
+
+# Identities granted roles/run.invoker on the proxy, i.e. the people or services allowed to call it.
+# Prefix each entry with its type: user:, group: or serviceAccount:
+proxy_invoker_identities = [
+  "group:developers@example.com",
+  "user:jane.doe@example.com",
+]
+
+#
+# ------------------ REGION & RUNTIME ------------------
+#
+
+# Region of the Cloud Run service and of the regional resources (for example europe-west1, us-central1)
+region = "europe-west1"
+
+#
+# ------------------ USAGE ANALYTICS & BIGQUERY ------------------
+#
+
+# Name of the BigQuery dataset that receives one usage event per inference (letters, digits, underscores)
+usage_bigquery_dataset_id = "ai_usage"
+
+# Location of that dataset: a multi-region (EU, US) or a single region (europe-west1, ...)
+bigquery_dataset_location = "EU"
+
+#
+# ------------------ BILLING BUDGETS & ALERTS ------------------
+#
+
+# Monthly budget of the hub project, expressed in budget_currency; notifications are sent when it is approached
+budget_amount = 1000
+
+# ISO 4217 code of the budget currency; it must match the currency of the billing account (EUR, USD, ...)
+budget_currency = "EUR"
+
+# Shared recipients for budgets, Monitoring alerts and Error Reporting
+notification_emails = [
+  "ai-platform-team@example.com",
+]
+
+# Alert when upstream or stream errors for a model exceed this count within five minutes
+proxy_error_count_threshold = 5
+
+# Alert when responses without token usage for a model exceed this count within five minutes
+# (missing usage means unbilled cost data)
+proxy_missing_usage_count_threshold = 5
+
+# Alert when the 95th percentile of the time to first streamed content stays above this many milliseconds for five minutes
+proxy_ttft_p95_threshold_ms = 10000
+
+#
+# ------------------ GOVERNANCE & POLICIES ------------------
+#
+
+# Models clients may call through the proxy; any other model is rejected with 400.
+# Use the IDs of the model catalog; suffixes such as -high or -medium select an effort variant.
+allowed_models = [
+  "claude-opus-5-5",
+  "claude-sonnet-5-5-medium",
+  "claude-haiku-5-5-medium",
+  "gemini-3.8-flash",
+  "gemini-3.8-flash-high",
+]
+
+# Vertex AI projects that clients may target (the client names the project in each request).
+# An empty list allows only the hub project.
+# Terraform does not manage IAM on other projects: remember to grant roles/aiplatform.user to the proxy
+# service account (terraform output proxy_service_account_email) on every additional project listed here.
+allowed_vertex_projects = []
+
+# Vertex AI regions that clients may target (project and region are chosen by the client); lowercase, "global" included
+allowed_vertex_regions = ["global"]
+
+# Request label key carrying the user name chosen by the client (cost attribution)
+user_label_key = "vscode-vertex-ai-user"
+
+# Request label key carrying the workspace or project name chosen by the client (cost attribution)
+project_label_key = "vscode-vertex-ai-project"
+
+# Label key the proxy sets itself with the email of the verified caller; clients cannot forge it.
+auth_user_label_key = "proxy-auth-user"
+
+# URL of the raw JSON model catalog used by /discovery (a GitHub raw URL or any HTTP(S) URL the proxy can reach)
+models_catalog_url = "https://raw.githubusercontent.com/jorsm/vertex-ai-models-chat-provider/main/src/models.json"
+
+# Reject requests that lack the project label (true) or accept them (false)
+require_project_label = true
+
+# Reject requests that lack the user label (true) or accept them (false)
+require_user_label = true
+
+# Maximum context window accepted per request, in tokens; a value <= 0 disables the limit
+max_context_tokens = 500000
+
+# Maximum input tokens advertised to clients in /discovery for every model; a value <= 0 keeps the catalog values
+discovery_max_input_tokens = 250000
+
+# Domain mapped to the Cloud Run service; also published as PROXY_BASE_URL in /openapi.json.
+# You must own it and create the DNS records listed by: terraform output custom_domain_dns_records
+custom_domain = "ai-companion-proxy.example.com"
+
+#
+# ------------------ CLOUD TRACE ------------------
+#
+
+# Export application spans to Cloud Trace (true) or disable tracing (false)
+proxy_trace_enabled = true
+
+# Fraction of inference traces to export, from 0 (none) to 1 (all)
+proxy_trace_sampling_ratio = 1
+
+# Deadline in milliseconds of each trace export call and of the final flush (positive integer)
+proxy_trace_export_timeout_ms = 1000
+
+# Location of the Cloud Trace storage bucket (for example eu, us, global)
+proxy_trace_storage_location = "eu"

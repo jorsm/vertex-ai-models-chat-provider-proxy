@@ -1,0 +1,23 @@
+line-length = 300
+target-version = "py314"
+
+[lint]
+select = ["ALL"]
+ignore = [
+    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed in `input`
+    "D100",   # Missing docstring in public module
+    "EM101",  # Exception must not use a string literal, assign to variable first
+    "EM102",  # Exception must not use an f-string literal, assign to variable first
+    "FA102",  # Missing `from __future__ import annotations`, but uses PEP 604 union
+    "FBT001", # Boolean-typed positional argument in function definition
+    "FBT002", # Boolean default positional argument in function definition
+    "G004",   # Logging statement uses f-string
+    "INP001", # File `src/dags/commons/logging.py` is part of an implicit namespace package. Add an `__init__.py`.
+    "SIM108", # Use ternary operator instead of `if`-`else`-block
+    "TRY003", # Avoid specifying long messages outside the exception class
+    "RET504", # Unnecessary assignment before `return` statement
+    "AIR311", # Google Cloud Airflow Provider - Avoid using `*args` and `**kwargs` in DAG definition
+    "DTZ011", # Naive datetime.date.today()
+    "D203",   # one-blank-line-before-class (incompatible with D211)
+    "D213"    # multi-line-summary-second-line (incompatible with D212)
+]

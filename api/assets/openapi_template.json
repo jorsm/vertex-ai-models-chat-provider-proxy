@@ -1,0 +1,407 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AI Companion Proxy API",
+    "version": "1.0.0",
+    "description": "Centralized, enterprise-governed AI Proxy and Relay for Google Vertex AI. Enforces Google OIDC authentication, model allowlisting, cost attribution labels, and zero-buffering streaming passthrough.",
+    "contact": {
+      "name": "AI Companion Proxy Maintainers"
+    }
+  },
+  "tags": [
+    {
+      "name": "System",
+      "description": "Healthcheck and API metadata"
+    },
+    {
+      "name": "Discovery",
+      "description": "Model catalog discovery compatible with VS Code Extension"
+    },
+    {
+      "name": "Inference",
+      "description": "Core prediction and generation endpoints"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Healthcheck and endpoints catalog",
+        "description": "Returns operational status, runtime info, and registry of available endpoints.",
+        "responses": {
+          "200": {
+            "description": "Service is healthy and ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "OpenAPI 3.0.3 Specification",
+        "description": "Returns the complete machine-readable OpenAPI specification for all proxy endpoints.",
+        "responses": {
+          "200": {
+            "description": "OpenAPI specification document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/discovery": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Discover allowed model catalog",
+        "description": "Returns catalog of approved models conforming to VS Code extension schema (candidateModels + regionPriority). Dynamically filtered by enterprise ALLOWED_MODELS.",
+        "responses": {
+          "200": {
+            "description": "Model catalog matching schemas/models.schema.json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project}/locations/{region}/publishers/{publisher}/models/{model}:{action}": {
+      "post": {
+        "tags": [
+          "Inference"
+        ],
+        "summary": "Vertex AI SDK endpoint as called by VS Code Extension",
+        "description": "Exact path invoked by @google/genai and @anthropic-ai/vertex-sdk when baseURL is remapped to this proxy.",
+        "security": [
+          {
+            "GoogleBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "region",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "publisher",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Streaming completion response from Vertex AI"
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "GoogleBearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Google Cloud OIDC Identity Token obtained via `gcloud auth print-identity-token` or Google Application Default Credentials (ADC). Validated against enterprise domain."
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "service": {
+            "type": "string",
+            "example": "ai-companion-proxy"
+          },
+          "runtime": {
+            "type": "string",
+            "example": "python-3.14"
+          },
+          "allowed_regions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "global"
+            ]
+          },
+          "endpoints": {
+            "type": "object",
+            "properties": {
+              "discovery": {
+                "type": "string",
+                "example": "/discovery"
+              },
+              "openapi": {
+                "type": "string",
+                "example": "/openapi.json"
+              },
+              "health": {
+                "type": "string",
+                "example": "/health"
+              }
+            }
+          }
+        }
+      },
+      "DiscoveryResponse": {
+        "type": "object",
+        "required": [
+          "candidateModels",
+          "regionPriority"
+        ],
+        "properties": {
+          "candidateModels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelSpec"
+            }
+          },
+          "regionPriority": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "global"
+            ]
+          }
+        }
+      },
+      "ModelSpec": {
+        "type": "object",
+        "required": [
+          "id",
+          "vendor",
+          "displayName",
+          "family",
+          "version",
+          "maxInputTokens",
+          "maxOutputTokens",
+          "capabilities",
+          "pricing"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "gemini-3.8-flash"
+          },
+          "vendor": {
+            "type": "string",
+            "enum": [
+              "google",
+              "anthropic",
+              "grok"
+            ]
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Gemini 3.8 Flash"
+          },
+          "family": {
+            "type": "string",
+            "example": "gemini"
+          },
+          "version": {
+            "type": "string",
+            "example": "gemini-3.8-flash"
+          },
+          "maxInputTokens": {
+            "type": "integer",
+            "example": 1048576
+          },
+          "maxOutputTokens": {
+            "type": "integer",
+            "example": 65536
+          },
+          "capabilities": {
+            "type": "object",
+            "properties": {
+              "imageInput": {
+                "type": "boolean",
+                "example": true
+              },
+              "toolCalling": {
+                "type": "boolean",
+                "example": true
+              }
+            }
+          },
+          "pricing": {
+            "type": "object",
+            "properties": {
+              "input": {
+                "type": "number",
+                "example": 0.75
+              },
+              "output": {
+                "type": "number",
+                "example": 3.75
+              },
+              "cache_read": {
+                "type": "number",
+                "example": 0.075
+              },
+              "cache_create": {
+                "type": "number",
+                "example": 0.0
+              }
+            }
+          }
+        }
+      },
+      "PredictRequest": {
+        "type": "object",
+        "required": [
+          "contents",
+          "labels"
+        ],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Allowed model identifier",
+            "example": "gemini-3.8-flash"
+          },
+          "contents": {
+            "type": "array",
+            "description": "Gemini / Vertex contents array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "labels": {
+            "type": "object",
+            "description": "Mandatory cost attribution labels"
+          }
+        }
+      },
+      "ErrorPayload": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "example": 400
+              },
+              "status": {
+                "type": "string",
+                "example": "FAILED_PRECONDITION"
+              },
+              "message": {
+                "type": "string",
+                "example": "Missing required label 'vscode-vertex-ai-project'."
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "400BadRequest": {
+        "description": "Governance check failed (unauthorized model, missing mandatory labels)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorPayload"
+            }
+          }
+        }
+      },
+      "401Unauthorized": {
+        "description": "Missing, expired, or invalid Google OIDC token",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorPayload"
+            }
+          }
+        }
+      },
+      "405MethodNotAllowed": {
+        "description": "HTTP method not allowed on requested path",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorPayload"
+            }
+          }
+        }
+      }
+    }
+  }
+}
