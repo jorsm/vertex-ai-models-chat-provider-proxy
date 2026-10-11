@@ -6,7 +6,7 @@
 
 resource "google_cloud_run_v2_service" "copilot_chat_proxy" {
   depends_on = [
-    google_project_service.hub_services,
+    google_project_service.proxy_services,
     google_project_iam_member.proxy_sa_vertex_user,
     google_project_iam_member.proxy_sa_log_writer,
     google_project_iam_member.proxy_sa_trace_writer,
@@ -15,7 +15,7 @@ resource "google_cloud_run_v2_service" "copilot_chat_proxy" {
 
   name        = local.proxy_service_name
   location    = var.region
-  project     = google_project.hub_project.project_id
+  project     = google_project.proxy_project.project_id
   description = "Google Agent Platform for Copilot Chat - Proxy"
   ingress     = "INGRESS_TRAFFIC_ALL"
 
@@ -48,8 +48,8 @@ resource "google_cloud_run_v2_service" "copilot_chat_proxy" {
       }
 
       env {
-        name  = "HUB_PROJECT_ID"
-        value = google_project.hub_project.project_id
+        name  = "PROXY_PROJECT_ID"
+        value = google_project.proxy_project.project_id
       }
       env {
         name  = "ALLOWED_VERTEX_PROJECTS"
@@ -149,7 +149,7 @@ resource "google_cloud_run_v2_service" "copilot_chat_proxy" {
 resource "google_cloud_run_v2_service_iam_member" "proxy_invokers" {
   for_each = toset(var.proxy_invoker_identities)
 
-  project  = google_project.hub_project.project_id
+  project  = google_project.proxy_project.project_id
   location = var.region
   name     = google_cloud_run_v2_service.copilot_chat_proxy.name
   role     = "roles/run.invoker"
@@ -163,11 +163,11 @@ resource "google_cloud_run_domain_mapping" "proxy_domain_mapping" {
   depends_on = [google_cloud_run_v2_service.copilot_chat_proxy]
 
   location = var.region
-  project  = google_project.hub_project.project_id
+  project  = google_project.proxy_project.project_id
   name     = var.custom_domain
 
   metadata {
-    namespace = google_project.hub_project.project_id
+    namespace = google_project.proxy_project.project_id
   }
 
   spec {

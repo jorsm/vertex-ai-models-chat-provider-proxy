@@ -15,7 +15,7 @@
 - **Terraform** `>= 1.15.0` (providers `google` and `google-beta` pinned to `8.5.0`).
 - **Google Cloud SDK** (`gcloud`) authenticated as an administrator who can create projects in the target folder and link a billing account.
 - **Python 3.14** and **Docker** if you want to run or build the service locally.
-- A Google Cloud **folder** and **billing account** for the hub project.
+- A Google Cloud **folder** and **billing account** for the proxy project.
 - A domain you own, with access to its DNS zone, and a Google account that can verify it in [Search Console](https://search.google.com/search-console) (see [Custom domain](#3-custom-domain)).
 
 ## 1. Provision the infrastructure
@@ -30,11 +30,11 @@ terraform plan
 terraform apply
 ```
 
-Terraform creates, in the hub project:
+Terraform creates, in the proxy project:
 
 | Area | Resources |
 | --- | --- |
-| Project and APIs | Hub project, enabled APIs (Vertex AI, Cloud Run, Cloud Build, Artifact Registry, Logging, Monitoring, Trace, BigQuery, Billing Budgets, IAM, Storage) |
+| Project and APIs | Proxy project, enabled APIs (Vertex AI, Cloud Run, Cloud Build, Artifact Registry, Logging, Monitoring, Trace, BigQuery, Billing Budgets, IAM, Storage) |
 | Identity | Proxy service account with `aiplatform.user`, `logging.logWriter`, `cloudtrace.agent` |
 | Proxy | Cloud Run service (CPU 1, 512 MiB, scaling 0 to 20, concurrency 8, timeout 300 s), invoker bindings, custom domain mapping |
 | Analytics | BigQuery dataset, usage log table, Cloud Logging sink, normalized reporting view |
@@ -50,12 +50,12 @@ The script runs Cloud Build on the `api/` directory (using its `Dockerfile`) and
 
 ```bash
 # Linux / macOS
-PROJECT_ID=my-copilot-chat-proxy-hub REGION=europe-west1 ./api/deploy.sh
+PROJECT_ID=my-copilot-chat-proxy REGION=europe-west1 ./api/deploy.sh
 ```
 
 ```powershell
 # Windows
-.\api\deploy.ps1 -ProjectId my-copilot-chat-proxy-hub -Region europe-west1
+.\api\deploy.ps1 -ProjectId my-copilot-chat-proxy -Region europe-west1
 ```
 
 `SERVICE_NAME` / `-ServiceName` default to `copilot-chat-proxy`, which is the name Terraform uses.

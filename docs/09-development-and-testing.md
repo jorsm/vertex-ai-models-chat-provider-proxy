@@ -22,7 +22,7 @@ Python 3.14 is the target runtime (`ruff.toml` sets `target-version = "py314"`).
 All required environment variables must be set (see [Configuration](06-configuration.md)); `LOCAL_DEV_BYPASS=true` removes the need for a real Google token, and `TRACE_ENABLED=false` avoids Cloud Trace calls.
 
 ```bash
-export HUB_PROJECT_ID=my-copilot-chat-proxy-hub ALLOWED_REGIONS=global \
+export PROXY_PROJECT_ID=my-copilot-chat-proxy ALLOWED_REGIONS=global \
        ALLOWED_MODELS=gemini-3.8-flash CHAT_USER_LABEL_KEY=vscode-vertex-ai-user \
        CHAT_PROJECT_LABEL_KEY=vscode-vertex-ai-project BILLING_USER_LABEL_KEY=assistant-user \
        BILLING_PROJECT_LABEL_KEY=assistant-project BILLING_AUTH_USER_LABEL_KEY=assistant-auth-user \
@@ -67,12 +67,12 @@ Assertions use the helpers in `tests/checks.py` (`expect`, `expect_equal`, `expe
 | Variable | Meaning |
 | --- | --- |
 | `PROXY_SERVICE_URI` | Base URL of the deployed proxy (required) |
-| `HUB_PROJECT_ID` | Project used in Vertex AI request paths; must be one the proxy service account can use (required) |
+| `PROXY_PROJECT_ID` | Project used in Vertex AI request paths; must be one the proxy service account can use (required) |
 | `PROXY_AUTH_TOKEN` or `GCP_ID_TOKEN` | Optional ID token. Without it the tests run `gcloud auth print-identity-token` |
 
 ```bash
 gcloud auth login
-export PROXY_SERVICE_URI=https://your-proxy.example.com HUB_PROJECT_ID=my-copilot-chat-proxy-hub
+export PROXY_SERVICE_URI=https://your-proxy.example.com PROXY_PROJECT_ID=my-copilot-chat-proxy
 pytest api/tests/test_integration_proxy.py -v
 ```
 

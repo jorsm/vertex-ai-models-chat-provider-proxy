@@ -43,9 +43,9 @@ def proxy_url() -> str:
 @pytest.fixture(scope="session")
 def vertex_project() -> str:
     """Return the Google Cloud project used in Vertex AI request paths, or skip when unset."""
-    project = os.getenv("HUB_PROJECT_ID", "").strip()
+    project = os.getenv("PROXY_PROJECT_ID", "").strip()
     if not project:
-        pytest.skip("Set HUB_PROJECT_ID to the hub project ID to run the live integration tests.")
+        pytest.skip("Set PROXY_PROJECT_ID to the proxy project ID to run the live integration tests.")
     return project
 
 

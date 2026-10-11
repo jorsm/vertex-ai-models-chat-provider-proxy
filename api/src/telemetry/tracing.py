@@ -95,14 +95,14 @@ def _build_provider() -> TracerProvider:
                 "service.name": "copilot-chat-proxy",
                 "service.version": os.getenv("K_REVISION") or "unknown",
                 "cloud.provider": "gcp",
-                "cloud.account.id": settings.hub_project_id,
+                "cloud.account.id": settings.proxy_project_id,
             },
         ),
     )
     provider.add_span_processor(
         BatchSpanProcessor(
             WarningCloudTraceSpanExporter(
-                project_id=settings.hub_project_id,
+                project_id=settings.proxy_project_id,
                 client=_BoundedTraceClient(),
                 resource_regex=r"^(service\.|cloud\.)",
             ),

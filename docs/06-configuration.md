@@ -18,8 +18,8 @@ Variables marked *required* have no default: the service refuses to use a missin
 
 | Variable | Required | Meaning | Terraform source |
 | --- | :---: | --- | --- |
-| `HUB_PROJECT_ID` | yes | Project hosting the proxy; used for telemetry and trace correlation, and as the default Vertex AI project | `project_id` |
-| `ALLOWED_VERTEX_PROJECTS` | no | Comma-separated list (or JSON array) of Vertex AI project IDs clients may target; defaults to `HUB_PROJECT_ID` | `allowed_vertex_projects` (empty list = hub project) |
+| `PROXY_PROJECT_ID` | yes | Project hosting the proxy; used for telemetry and trace correlation, and as the default Vertex AI project | `project_id` |
+| `ALLOWED_VERTEX_PROJECTS` | no | Comma-separated list (or JSON array) of Vertex AI project IDs clients may target; defaults to `PROXY_PROJECT_ID` | `allowed_vertex_projects` (empty list = proxy project) |
 | `ALLOWED_REGIONS` | yes | Comma-separated list (or JSON array) of permitted Vertex AI locations, for example `global` | `allowed_vertex_regions` |
 | `ALLOWED_MODELS` | yes | Comma-separated list (or JSON array) of permitted model IDs, including effort variants | `allowed_models` |
 | `CHAT_USER_LABEL_KEY` | yes | Key under which the chat client sends the user (don't touch: fixed by the extension) | `chat_user_label_key` |
@@ -48,9 +48,9 @@ Variables marked *required* have no default: the service refuses to use a missin
 
 | Variable | Description |
 | --- | --- |
-| `folder_id` | Folder in which the hub project is created |
-| `project_id` | ID of the hub project |
-| `billing_account_id` | Billing account linked to the hub project and used for the budget |
+| `folder_id` | Folder in which the proxy project is created |
+| `project_id` | ID of the proxy project |
+| `billing_account_id` | Billing account linked to the proxy project and used for the budget |
 | `region` | Region of the Cloud Run service and regional resources |
 | `custom_domain` | Domain mapped to the Cloud Run service; the proxy base URL is `https://<custom_domain>`. Domain mapping is a Preview feature limited to some regions, and the domain must be verified in Search Console first: see [Deployment](07-deployment.md#3-custom-domain) |
 | `proxy_invoker_identities` | IAM members (`user:`, `group:`, `serviceAccount:`) granted `roles/run.invoker` |
@@ -65,7 +65,7 @@ Variables marked *required* have no default: the service refuses to use a missin
 | --- | --- |
 | `usage_bigquery_dataset_id` | Dataset that receives usage events |
 | `bigquery_dataset_location` | Dataset location, for example `EU` |
-| `budget_amount`, `budget_currency` | Monthly billing budget of the hub project (alerts at 50%, 90%, 100% actual and 100% forecast) |
+| `budget_amount`, `budget_currency` | Monthly billing budget of the proxy project (alerts at 50%, 90%, 100% actual and 100% forecast) |
 | `notification_emails` | Recipients shared by budgets and Monitoring alerts |
 | `proxy_error_count_threshold` | Alert if upstream/stream errors per model exceed this count in five minutes |
 | `proxy_missing_usage_count_threshold` | Alert if responses without usage metadata per model exceed this count in five minutes |
@@ -84,7 +84,7 @@ Variables marked *required* have no default: the service refuses to use a missin
 
 | Output | Meaning |
 | --- | --- |
-| `hub_project_id`, `hub_project_number` | Identifiers of the hub project |
+| `proxy_project_id`, `proxy_project_number` | Identifiers of the proxy project |
 | `proxy_service_uri` | HTTPS URL of the Cloud Run service |
 | `proxy_service_account_email` | Service account the proxy runs as |
 | `custom_domain_url`, `custom_domain_dns_records` | Custom domain URL and the DNS records you must create |
@@ -92,4 +92,4 @@ Variables marked *required* have no default: the service refuses to use a missin
 | `usage_bigquery_dataset_id`, `usage_bigquery_table`, `usage_bigquery_view` | Where usage data lands and the reporting view |
 | `usage_log_sink_name` | Cloud Logging sink exporting usage events |
 | `notification_channels` | Monitoring notification channel IDs |
-| `hub_project_budget` | Billing budget resource name |
+| `proxy_project_budget` | Billing budget resource name |

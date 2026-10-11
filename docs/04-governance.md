@@ -25,7 +25,7 @@ Variants are resolved before the upstream call: a `-high` suffix is stripped fro
 
 ## Project allowlist
 
-The Vertex AI project is read from the path (`/projects/{project}/locations/...`). It must be in `ALLOWED_VERTEX_PROJECTS`, otherwise the request is rejected with `400`. When the setting is not provided, only the hub project (`HUB_PROJECT_ID`) is allowed. In a wider setup, list every project that clients may consume Vertex AI from: the client picks one per request, typically per workspace. The proxy service account needs `roles/aiplatform.user` on each of them. Terraform grants it on the hub project only, and only when the hub is an allowed project: for every other listed project, grant the role to the service account (`terraform output proxy_service_account_email`) yourself.
+The Vertex AI project is read from the path (`/projects/{project}/locations/...`). It must be in `ALLOWED_VERTEX_PROJECTS`, otherwise the request is rejected with `400`. When the setting is not provided, only the proxy project (`PROXY_PROJECT_ID`) is allowed. In a wider setup, list every project that clients may consume Vertex AI from: the client picks one per request, typically per workspace. The proxy service account needs `roles/aiplatform.user` on each of them. Terraform grants it on the proxy project only, and only when the proxy project is an allowed project: for every other listed project, grant the role to the service account (`terraform output proxy_service_account_email`) yourself.
 
 ## Region allowlist
 

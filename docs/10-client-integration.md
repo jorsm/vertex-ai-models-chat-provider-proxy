@@ -15,7 +15,7 @@ Set the extension's proxy URL to the base URL of your proxy (`terraform output p
 ```json
 {
   "vertexAiChat.proxyUrl": "https://copilot-chat-proxy.example.com",
-  "vertexAiChat.projectId": "my-copilot-chat-proxy-hub"
+  "vertexAiChat.projectId": "my-copilot-chat-proxy"
 }
 ```
 
@@ -27,7 +27,7 @@ With `proxyUrl` set, the extension:
 4. Attaches the user and workspace labels (`vscode-vertex-ai-user`, `vscode-vertex-ai-project`) when label support is enabled in the extension, so they must match `CHAT_USER_LABEL_KEY` and `CHAT_PROJECT_LABEL_KEY` (the proxy remaps them to your billing label names).
 5. Retries only transient failures (429, 502, 503 and network errors) and shows other errors, including the proxy's `400` and `403` messages, to the user immediately.
 
-`vertexAiChat.projectId` must be a project the **proxy service account** can use for Vertex AI calls (normally the hub project). Refer to the extension's own documentation for the exact current behavior and for providers that do not yet support proxy mode.
+`vertexAiChat.projectId` must be a project the **proxy service account** can use for Vertex AI calls (normally the proxy project). Refer to the extension's own documentation for the exact current behavior and for providers that do not yet support proxy mode.
 
 ## Obtaining an ID token
 
@@ -46,7 +46,7 @@ Libraries such as `google-auth` (`id_token.fetch_id_token`) or `google-auth-libr
 ```bash
 curl -N -X POST \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  "https://copilot-chat-proxy.example.com/v1/projects/my-copilot-chat-proxy-hub/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse" \
+  "https://copilot-chat-proxy.example.com/v1/projects/my-copilot-chat-proxy/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse" \
   -d '{
         "contents": [{"role": "user", "parts": [{"text": "Say hello"}]}],
         "labels": {"vscode-vertex-ai-user": "jane", "vscode-vertex-ai-project": "my-repo"}

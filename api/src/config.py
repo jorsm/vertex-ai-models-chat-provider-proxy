@@ -53,15 +53,15 @@ class Settings:
     """
 
     @property
-    def hub_project_id(self) -> str:
+    def proxy_project_id(self) -> str:
         """Project hosting the proxy itself (telemetry, and the default Vertex project)."""
-        return _get_required_env("HUB_PROJECT_ID")
+        return _get_required_env("PROXY_PROJECT_ID")
 
     @property
     def allowed_vertex_projects(self) -> list[str]:
-        """Projects clients may target on Vertex AI, from optional `ALLOWED_VERTEX_PROJECTS`; the hub project when unset."""
+        """Projects clients may target on Vertex AI, from optional `ALLOWED_VERTEX_PROJECTS`; the proxy project when unset."""
         if not os.getenv("ALLOWED_VERTEX_PROJECTS", "").strip():
-            return [self.hub_project_id]
+            return [self.proxy_project_id]
         return _parse_required_list("ALLOWED_VERTEX_PROJECTS")
 
     @property

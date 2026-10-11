@@ -15,7 +15,7 @@ flowchart TD
         EXT --> ADC
     end
 
-    subgraph Hub["Hub project (Terraform)"]
+    subgraph ProxyProject["Proxy project (Terraform)"]
         IAM["Cloud Run IAM<br/>roles/run.invoker"]
         subgraph Proxy["Google Agent Platform for Copilot Chat - Proxy (Cloud Run)"]
             AUTH["Authentication"]
@@ -105,7 +105,7 @@ terraform/
 ├── providers.tf                        # google and google-beta providers
 ├── variables.tf                        # Input variables (no defaults)
 ├── outputs.tf                          # Service URL, service account, BigQuery objects, ...
-├── main_001_[projects].tf              # Hub project
+├── main_001_[projects].tf              # Proxy project
 ├── main_002_[services].tf              # API enablement
 ├── main_003_[iam].tf                   # Proxy service account and roles
 ├── main_005_[budgets].tf               # Billing budget

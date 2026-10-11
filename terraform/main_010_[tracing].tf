@@ -4,10 +4,10 @@
 # Cloud Trace storage: the observability bucket that holds the spans exported by the proxy.
 
 resource "google_observability_bucket" "proxy_traces" {
-  project      = google_project.hub_project.project_id
+  project      = google_project.proxy_project.project_id
   location     = var.proxy_trace_storage_location
   bucket_id    = "_Trace"
   display_name = "Copilot Chat Proxy traces"
   description  = "Application spans for Google Agent Platform for Copilot Chat - Proxy component latency"
-  depends_on   = [google_project_service.hub_services]
+  depends_on   = [google_project_service.proxy_services]
 }

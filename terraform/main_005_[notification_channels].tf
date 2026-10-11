@@ -6,7 +6,7 @@
 resource "google_monitoring_notification_channel" "notification_email" {
   for_each = toset(var.notification_emails)
 
-  project      = google_project.hub_project.project_id
+  project      = google_project.proxy_project.project_id
   display_name = "Copilot Chat Proxy Notifications - ${each.value}"
   description  = "Shared notifications for billing budgets, Monitoring alerts and Error Reporting"
   type         = "email"
@@ -15,5 +15,5 @@ resource "google_monitoring_notification_channel" "notification_email" {
     email_address = each.value
   }
 
-  depends_on = [google_project_service.hub_services]
+  depends_on = [google_project_service.proxy_services]
 }

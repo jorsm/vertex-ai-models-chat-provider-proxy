@@ -5,7 +5,7 @@
     Uses Cloud Build to create the image from the Dockerfile in the api folder and updates
     the existing service, leaving IAM and configuration to Terraform.
 .PARAMETER ProjectId
-    Google Cloud project hosting the service (the hub project).
+    Google Cloud project hosting the service (the proxy project).
 .PARAMETER Region
     Cloud Run region of the service.
 .PARAMETER ServiceName

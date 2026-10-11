@@ -15,7 +15,7 @@ Organizations that give developers an AI coding assistant backed by **Google Clo
 
 ## The solution
 
-The **Google Agent Platform for Copilot Chat - Proxy** is a small serverless relay deployed once, in a central *hub* project:
+The **Google Agent Platform for Copilot Chat - Proxy** is a small serverless relay deployed once, in a dedicated proxy project:
 
 - Developers authenticate **to the proxy** with a Google ID token (OIDC). Cloud Run IAM decides who may invoke it.
 - The proxy verifies the caller, applies the **model and region allowlists**, **injects the cost-attribution labels** (including a non-forgeable label derived from the verified identity) and forwards the call to Vertex AI using its **own service account**.
@@ -28,7 +28,7 @@ This repository contains both halves of the solution:
 | Directory | Content |
 | --- | --- |
 | [`api/`](../api) | The proxy service: a Python 3.14 Flask application packaged as a container for Cloud Run. |
-| [`terraform/`](../terraform) | Infrastructure as code for the hub project: APIs, service account, Cloud Run service, IAM, custom domain, BigQuery usage analytics, budgets, metrics, dashboard, alerts and Cloud Trace storage. |
+| [`terraform/`](../terraform) | Infrastructure as code for the proxy project: APIs, service account, Cloud Run service, IAM, custom domain, BigQuery usage analytics, budgets, metrics, dashboard, alerts and Cloud Trace storage. |
 
 ## As-is versus to-be
 
@@ -52,7 +52,7 @@ flowchart LR
 | Identity in labels | Whatever the client sends | Derived from the verified Google token (anti-spoofing) |
 | Model control | Any model enabled in the project | Central allowlist; rejected with HTTP 400 |
 | Credentials | Personal credentials with broad Vertex IAM roles | Users hold only `roles/run.invoker`; the proxy service account calls Vertex |
-| Third-party model terms | Accepted by every developer | Accepted once, in the hub project |
+| Third-party model terms | Accepted by every developer | Accepted once, in the proxy project |
 | Usage and cost tracking | Local client logs | Central events in Cloud Logging and BigQuery |
 | User experience | Standard chat | Unchanged streaming latency, clearer errors |
 

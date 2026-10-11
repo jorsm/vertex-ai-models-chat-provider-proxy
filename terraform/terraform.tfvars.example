@@ -8,7 +8,7 @@
 # ------------------ ENVIRONMENT ------------------
 #
 
-# Numeric ID of the Google Cloud folder where the hub project is created
+# Numeric ID of the Google Cloud folder where the proxy project is created
 # (Console > IAM & Admin > Manage resources, or: gcloud resource-manager folders list --organization=ORG_ID)
 folder_id = "123456789012"
 
@@ -16,10 +16,10 @@ folder_id = "123456789012"
 # ------------------ PROJECT & USERS ------------------
 #
 
-# ID of the hub project to create: globally unique, 6-30 characters, lowercase letters, digits and hyphens
-project_id = "my-copilot-chat-proxy-hub"
+# ID of the proxy project to create: globally unique, 6-30 characters, lowercase letters, digits and hyphens
+project_id = "my-copilot-chat-proxy"
 
-# Billing account linked to the hub project, in the form XXXXXX-XXXXXX-XXXXXX
+# Billing account linked to the proxy project, in the form XXXXXX-XXXXXX-XXXXXX
 # (gcloud billing accounts list). You need permission to link projects to it.
 billing_account_id = "AAAAAA-BBBBBB-CCCCCC"
 
@@ -51,7 +51,7 @@ bigquery_dataset_location = "EU"
 # ------------------ BILLING BUDGETS & ALERTS ------------------
 #
 
-# Monthly budget of the hub project, expressed in budget_currency; notifications are sent when it is approached
+# Monthly budget of the proxy project, expressed in budget_currency; notifications are sent when it is approached
 budget_amount = 1000
 
 # ISO 4217 code of the budget currency; it must match the currency of the billing account (EUR, USD, ...)
@@ -87,7 +87,7 @@ allowed_models = [
 ]
 
 # Vertex AI projects that clients may target (the client names the project in each request).
-# An empty list allows only the hub project.
+# An empty list allows only the proxy project.
 # Terraform does not manage IAM on other projects: remember to grant roles/aiplatform.user to the proxy
 # service account (terraform output proxy_service_account_email) on every additional project listed here.
 allowed_vertex_projects = []

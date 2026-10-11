@@ -54,7 +54,7 @@ def trace_log_fields(request: Request | None = None) -> dict[str, str | bool]:
     if not context.is_valid:
         return {}
     return {
-        "logging.googleapis.com/trace": f"projects/{settings.hub_project_id}/traces/{context.trace_id:032x}",
+        "logging.googleapis.com/trace": f"projects/{settings.proxy_project_id}/traces/{context.trace_id:032x}",
         "logging.googleapis.com/spanId": f"{context.span_id:016x}",
         "logging.googleapis.com/trace_sampled": bool(context.trace_flags.sampled),
     }

@@ -5,10 +5,10 @@
 
 resource "google_bigquery_dataset" "ai_usage" {
   depends_on = [
-    google_project_service.hub_services
+    google_project_service.proxy_services
   ]
 
-  project       = google_project.hub_project.project_id
+  project       = google_project.proxy_project.project_id
   dataset_id    = var.usage_bigquery_dataset_id
   friendly_name = "AI Usage Analytics"
   description   = "Near-real-time Vertex AI token usage and estimated costs"
@@ -22,7 +22,7 @@ resource "google_bigquery_dataset" "ai_usage" {
 }
 
 resource "google_bigquery_table" "ai_usage_logs" {
-  project    = google_project.hub_project.project_id
+  project    = google_project.proxy_project.project_id
   dataset_id = google_bigquery_dataset.ai_usage.dataset_id
   # Logging derives this name from run.googleapis.com/stdout.
   table_id      = "run_googleapis_com_stdout"
@@ -46,9 +46,9 @@ resource "google_bigquery_table" "ai_usage_logs" {
 }
 
 resource "google_logging_project_sink" "usage_bigquery" {
-  project                = google_project.hub_project.project_id
+  project                = google_project.proxy_project.project_id
   name                   = "sink-proxy-usage-to-bq"
-  destination            = "bigquery.googleapis.com/projects/${google_project.hub_project.project_id}/datasets/${google_bigquery_dataset.ai_usage.dataset_id}"
+  destination            = "bigquery.googleapis.com/projects/${google_project.proxy_project.project_id}/datasets/${google_bigquery_dataset.ai_usage.dataset_id}"
   unique_writer_identity = true
   filter                 = "${local.proxy_log_filter}\nlog_id(\"run.googleapis.com/stdout\")\njsonPayload.event_id:*"
 
@@ -59,14 +59,14 @@ resource "google_logging_project_sink" "usage_bigquery" {
 }
 
 resource "google_bigquery_dataset_iam_member" "usage_sink_writer" {
-  project    = google_project.hub_project.project_id
+  project    = google_project.proxy_project.project_id
   dataset_id = google_bigquery_dataset.ai_usage.dataset_id
   role       = "roles/bigquery.dataEditor"
   member     = google_logging_project_sink.usage_bigquery.writer_identity
 }
 
 resource "google_bigquery_table" "ai_usage_events_normalized" {
-  project       = google_project.hub_project.project_id
+  project       = google_project.proxy_project.project_id
   dataset_id    = google_bigquery_dataset.ai_usage.dataset_id
   table_id      = "ai_usage_events_normalized"
   friendly_name = "AI usage report"
@@ -75,7 +75,7 @@ resource "google_bigquery_table" "ai_usage_events_normalized" {
   view {
     use_legacy_sql = false
     query = templatefile("${path.module}/sql/ai_usage_events_normalized.sql", {
-      source_table = "${google_project.hub_project.project_id}.${google_bigquery_dataset.ai_usage.dataset_id}.${google_bigquery_table.ai_usage_logs.table_id}"
+      source_table = "${google_project.proxy_project.project_id}.${google_bigquery_dataset.ai_usage.dataset_id}.${google_bigquery_table.ai_usage_logs.table_id}"
     })
   }
 }

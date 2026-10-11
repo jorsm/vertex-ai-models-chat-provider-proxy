@@ -25,14 +25,14 @@ flowchart LR
 - **Zero-buffering streaming** of SSE and chunked responses for Gemini and Claude.
 - **Usage analytics.** One structured event per inference, exported to BigQuery with token, cache, latency and estimated-cost fields. No prompts or responses are stored. See [Observability](docs/08-observability.md).
 - **Operations.** Log-based metrics, a dashboard, alerts, a billing budget and Cloud Trace spans per pipeline stage.
-- **Infrastructure as code.** One Terraform configuration provisions everything in a dedicated hub project.
+- **Infrastructure as code.** One Terraform configuration provisions everything in a dedicated proxy project.
 
 ## Repository layout
 
 | Path | Content |
 | --- | --- |
 | [`api/`](api) | The proxy: Python 3.14, Flask, Gunicorn, packaged with a Dockerfile; tests and deploy scripts |
-| [`terraform/`](terraform) | Hub project, IAM, Cloud Run service, custom domain, BigQuery analytics, budget, metrics, alerts, tracing |
+| [`terraform/`](terraform) | Proxy project, IAM, Cloud Run service, custom domain, BigQuery analytics, budget, metrics, alerts, tracing |
 | [`docs/`](docs) | Full documentation |
 
 ## Quick start
@@ -40,14 +40,14 @@ flowchart LR
 Prerequisites: Terraform `>= 1.15.0`, the Google Cloud SDK (`gcloud`), a Google Cloud folder and billing account, and a domain you own, verified in [Search Console](https://search.google.com/search-console) before the first apply (the Cloud Run domain mapping is a Preview feature limited to some regions: see [Deployment](docs/07-deployment.md#3-custom-domain)).
 
 ```bash
-# 1. Provision the hub project and the Cloud Run service
+# 1. Provision the proxy project and the Cloud Run service
 cd terraform
 cp terraform.tfvars.example terraform.tfvars    # edit all placeholders
 terraform init && terraform apply
 
 # 2. Build and deploy the proxy code
 cd ..
-PROJECT_ID=<hub-project-id> REGION=<region> ./api/deploy.sh      # Windows: .\api\deploy.ps1 -ProjectId ... -Region ...
+PROJECT_ID=<proxy-project-id> REGION=<region> ./api/deploy.sh      # Windows: .\api\deploy.ps1 -ProjectId ... -Region ...
 
 # 3. Check it
 URL=$(terraform -chdir=terraform output -raw proxy_service_uri)

@@ -62,7 +62,7 @@ variable "allowed_vertex_regions" {
 
 variable "allowed_vertex_projects" {
   type        = list(string)
-  description = "Google Cloud project IDs clients may target on Vertex AI through the proxy; an empty list means only the hub project. Terraform does not grant IAM on other projects: give the proxy service account roles/aiplatform.user there"
+  description = "Google Cloud project IDs clients may target on Vertex AI through the proxy; an empty list means only the proxy project. Terraform does not grant IAM on other projects: give the proxy service account roles/aiplatform.user there"
 }
 
 variable "chat_user_label_key" {

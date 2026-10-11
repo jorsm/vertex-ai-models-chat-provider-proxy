@@ -3,14 +3,14 @@
 # Build and deploy the Google Agent Platform for Copilot Chat - Proxy Cloud Run service with Cloud Build.
 #
 # Required environment variables:
-#   PROJECT_ID   Google Cloud project hosting the service (the hub project)
+#   PROJECT_ID   Google Cloud project hosting the service (the proxy project)
 #   REGION       Cloud Run region of the service
 # Optional:
 #   SERVICE_NAME Cloud Run service name (default: copilot-chat-proxy)
 #
 set -euo pipefail
 
-PROJECT_ID="${PROJECT_ID:?Set PROJECT_ID to the hub project ID}"
+PROJECT_ID="${PROJECT_ID:?Set PROJECT_ID to the proxy project ID}"
 REGION="${REGION:?Set REGION to the Cloud Run region}"
 SERVICE_NAME="${SERVICE_NAME:-copilot-chat-proxy}"
 

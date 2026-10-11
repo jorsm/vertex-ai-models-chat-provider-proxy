@@ -43,8 +43,8 @@ type UpstreamResult = tuple[int, dict[str, str], Iterator[bytes]]
 @pytest.fixture(autouse=True)
 def setup_test_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set the required environment variables for test execution."""
-    monkeypatch.setenv("HUB_PROJECT_ID", "test-hub-project")
-    monkeypatch.setenv("ALLOWED_VERTEX_PROJECTS", "test-hub-project,user-project,test-project,my-proj,p")
+    monkeypatch.setenv("PROXY_PROJECT_ID", "test-proxy-project")
+    monkeypatch.setenv("ALLOWED_VERTEX_PROJECTS", "test-proxy-project,user-project,test-project,my-proj,p")
     monkeypatch.setenv("ALLOWED_REGIONS", "global")
     monkeypatch.setenv("CHAT_USER_LABEL_KEY", "vscode-vertex-ai-user")
     monkeypatch.setenv("CHAT_PROJECT_LABEL_KEY", "vscode-vertex-ai-project")
@@ -294,12 +294,12 @@ def test_project_outside_allowlist_is_rejected() -> None:
     expect_in("Approved projects", excinfo.value.message)
 
 
-def test_vertex_projects_default_to_hub_project(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify the hub project is the only allowed project when the setting is unset."""
+def test_vertex_projects_default_to_proxy_project(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify the proxy project is the only allowed project when the setting is unset."""
     monkeypatch.delenv("ALLOWED_VERTEX_PROJECTS")
-    expect_equal(settings.allowed_vertex_projects, ["test-hub-project"])
+    expect_equal(settings.allowed_vertex_projects, ["test-proxy-project"])
     body = {"labels": {"vscode-vertex-ai-project": "p", "vscode-vertex-ai-user": "u"}}
-    validate_model_and_enforce_policy(_project_path("test-hub-project"), body, "user@example.com")
+    validate_model_and_enforce_policy(_project_path("test-proxy-project"), body, "user@example.com")
     with pytest.raises(GovernanceError):
         validate_model_and_enforce_policy(_project_path("user-project"), body, "user@example.com")
 
@@ -536,7 +536,7 @@ class TestFlaskHttp:
     def test_http_missing_auth_header(self, flask_client: FlaskClient, monkeypatch: pytest.MonkeyPatch) -> None:
         """Verify http missing auth header."""
         monkeypatch.setenv("LOCAL_DEV_BYPASS", "false")
-        sdk_path = "/v1/projects/test-hub-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
+        sdk_path = "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
         resp = flask_client.post(
             sdk_path,
             json={
@@ -555,7 +555,7 @@ class TestFlaskHttp:
     def test_http_missing_project_label(self, flask_client: FlaskClient, monkeypatch: pytest.MonkeyPatch) -> None:
         """Verify http missing project label."""
         monkeypatch.setenv("LOCAL_DEV_BYPASS", "true")
-        sdk_path = "/v1/projects/test-hub-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
+        sdk_path = "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
         resp = flask_client.post(
             sdk_path,
             json={"contents": [], "labels": {"vscode-vertex-ai-user": "my-user"}},
@@ -568,7 +568,7 @@ class TestFlaskHttp:
     def test_http_missing_user_label(self, flask_client: FlaskClient, monkeypatch: pytest.MonkeyPatch) -> None:
         """Verify http missing user label."""
         monkeypatch.setenv("LOCAL_DEV_BYPASS", "true")
-        sdk_path = "/v1/projects/test-hub-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
+        sdk_path = "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
         resp = flask_client.post(
             sdk_path,
             json={"contents": [], "labels": {"vscode-vertex-ai-project": "my-project"}},
@@ -581,7 +581,7 @@ class TestFlaskHttp:
     def test_http_unauthorized_model(self, flask_client: FlaskClient, monkeypatch: pytest.MonkeyPatch) -> None:
         """Verify http unauthorized model."""
         monkeypatch.setenv("LOCAL_DEV_BYPASS", "true")
-        sdk_path = "/v1/projects/test-hub-project/locations/global/publishers/google/models/gemini-3.7-flash:generateContent"
+        sdk_path = "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.7-flash:generateContent"
         resp = flask_client.post(
             sdk_path,
             json={
@@ -614,7 +614,7 @@ class TestFlaskHttp:
 
         monkeypatch.setattr(inference_handler, "forward_to_vertex", mock_forward)
 
-        sdk_path = "/v1/projects/test-hub-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
+        sdk_path = "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
         resp = flask_client.post(
             sdk_path,
             json={
@@ -679,7 +679,7 @@ class TestFlaskHttp:
             },
         )
 
-        sdk_path = "/v1/projects/test-hub-project/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent"
+        sdk_path = "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent"
         resp = flask_client.post(
             sdk_path,
             json={
@@ -759,7 +759,7 @@ class TestFlaskHttp:
         }[case.failure]
         monkeypatch.setattr(inference_handler, target, fail)
         resp = flask_client.post(
-            "/v1/projects/test-hub-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent",
+            "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent",
             json={
                 "contents": [],
                 "labels": {
@@ -818,7 +818,7 @@ class TestFlaskHttp:
 
         monkeypatch.setattr(inference_handler, "forward_to_vertex", forward)
         resp = flask_client.post(
-            "/v1/projects/test-hub-project/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent",
+            "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent",
             json={
                 "contents": [],
                 "labels": {
@@ -846,7 +846,7 @@ class TestFlaskHttp:
 
     def test_http_inference_get_method_not_allowed(self, flask_client: FlaskClient) -> None:
         """Verify http inference get method not allowed."""
-        sdk_path = "/v1/projects/test-hub-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
+        sdk_path = "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
         resp = flask_client.get(sdk_path)
         expect_equal(resp.status_code, 405)
         err = resp.get_json()["error"]
@@ -902,7 +902,7 @@ class TestFlaskHttp:
 
         monkeypatch.setattr(inference_handler, "forward_to_vertex", mock_forward)
 
-        sdk_path = "/v1/projects/test-hub-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
+        sdk_path = "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
         resp = flask_client.post(
             sdk_path,
             json={

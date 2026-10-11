@@ -74,7 +74,7 @@ locals {
 # Export delivery belongs to Logging, not to the application. This platform
 # metric counts errors for this sink, including routing/schema failures.
 resource "google_monitoring_alert_policy" "usage_sink_export_errors" {
-  project      = google_project.hub_project.project_id
+  project      = google_project.proxy_project.project_id
   display_name = "Google Agent Platform for Copilot Chat - Proxy - usage sink export errors"
   combiner     = "OR"
   notification_channels = [
@@ -108,7 +108,7 @@ resource "google_monitoring_alert_policy" "usage_sink_export_errors" {
 resource "google_logging_metric" "proxy_counter" {
   for_each = local.proxy_counter_metrics
 
-  project     = google_project.hub_project.project_id
+  project     = google_project.proxy_project.project_id
   name        = "ai_proxy_${each.key}"
   description = each.value.description
   filter      = "${local.proxy_log_filter}\n${each.value.filter}"
@@ -128,13 +128,13 @@ resource "google_logging_metric" "proxy_counter" {
     }
   }
   label_extractors = { for key, field in local.proxy_metric_labels : key => "EXTRACT(jsonPayload.${field})" }
-  depends_on       = [google_project_service.hub_services]
+  depends_on       = [google_project_service.proxy_services]
 }
 
 resource "google_logging_metric" "proxy_distribution" {
   for_each = local.proxy_distribution_metrics
 
-  project         = google_project.hub_project.project_id
+  project         = google_project.proxy_project.project_id
   name            = "ai_proxy_${each.key}"
   description     = each.value.description
   filter          = "${local.proxy_log_filter}\njsonPayload.${each.key}>=0"
@@ -162,11 +162,11 @@ resource "google_logging_metric" "proxy_distribution" {
       scale              = each.value.scale
     }
   }
-  depends_on = [google_project_service.hub_services]
+  depends_on = [google_project_service.proxy_services]
 }
 
 resource "google_monitoring_dashboard" "proxy_observability" {
-  project = google_project.hub_project.project_id
+  project = google_project.proxy_project.project_id
   dashboard_json = jsonencode({
     displayName = "Google Agent Platform for Copilot Chat - Proxy — Usage and Reliability"
     gridLayout = {
@@ -201,7 +201,7 @@ resource "google_monitoring_dashboard" "proxy_observability" {
 resource "google_monitoring_alert_policy" "proxy_operational" {
   for_each = local.proxy_alerts
 
-  project      = google_project.hub_project.project_id
+  project      = google_project.proxy_project.project_id
   display_name = "Google Agent Platform for Copilot Chat - Proxy — ${each.key}"
   combiner     = "OR"
   enabled      = true

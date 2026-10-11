@@ -7,11 +7,11 @@ pip install -r api/requirements.txt -r api/tests/requirements.txt
 cd api && pytest tests
 ```
 
-To run the live integration tests, set the proxy URL and the hub project, and authenticate with an identity that holds `roles/run.invoker`:
+To run the live integration tests, set the proxy URL and the proxy project, and authenticate with an identity that holds `roles/run.invoker`:
 
 ```bash
 gcloud auth login
-export PROXY_SERVICE_URI=https://your-proxy.example.com HUB_PROJECT_ID=my-copilot-chat-proxy-hub
+export PROXY_SERVICE_URI=https://your-proxy.example.com PROXY_PROJECT_ID=my-copilot-chat-proxy
 pytest api/tests/test_integration_proxy.py -v
 ```
 

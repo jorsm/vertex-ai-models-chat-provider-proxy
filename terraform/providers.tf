@@ -1,4 +1,4 @@
-# Terraform and provider requirements with pinned versions; API usage and quota are billed to the hub project (user_project_override).
+# Terraform and provider requirements with pinned versions; API usage and quota are billed to the proxy project (user_project_override).
 
 terraform {
   required_version = ">= 1.15.0"

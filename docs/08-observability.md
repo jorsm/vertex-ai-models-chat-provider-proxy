@@ -94,7 +94,7 @@ Alerts notify `notification_emails`. With no emails, incidents remain visible in
 
 OpenTelemetry spans are exported to Cloud Trace, never including prompts, responses, tokens, emails or exception messages and stacks. Terraform enables the Trace APIs, creates the `_Trace` observability bucket in `proxy_trace_storage_location`, and grants `roles/cloudtrace.agent` to the service account.
 
-In the Google Cloud console open **Trace > Trace Explorer**, choose the hub project, and look for the span `proxy.inference` or the service `copilot-chat-proxy`.
+In the Google Cloud console open **Trace > Trace Explorer**, choose the proxy project, and look for the span `proxy.inference` or the service `copilot-chat-proxy`.
 
 | Span | Measures |
 | --- | --- |

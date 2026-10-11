@@ -1,10 +1,10 @@
 ############################################################
 # SERVICES
 ############################################################
-# Enables the Google Cloud APIs the hub project needs: Vertex AI, Cloud Run, Cloud Build, logging, monitoring, tracing, BigQuery, billing budgets and their dependencies.
+# Enables the Google Cloud APIs the proxy project needs: Vertex AI, Cloud Run, Cloud Build, logging, monitoring, tracing, BigQuery, billing budgets and their dependencies.
 
 locals {
-  hub_services = [
+  proxy_services = [
     "cloudresourcemanager.googleapis.com",
     "serviceusage.googleapis.com",
     "iam.googleapis.com",
@@ -25,11 +25,11 @@ locals {
   ]
 }
 
-# Enable required APIs on the central Hub project
-resource "google_project_service" "hub_services" {
-  for_each = toset(local.hub_services)
+# Enable required APIs on the proxy project
+resource "google_project_service" "proxy_services" {
+  for_each = toset(local.proxy_services)
 
-  project                    = google_project.hub_project.project_id
+  project                    = google_project.proxy_project.project_id
   service                    = each.key
   disable_dependent_services = false
   disable_on_destroy         = false

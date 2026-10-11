@@ -40,10 +40,10 @@ The cost-attribution label that identifies the caller (`BILLING_AUTH_USER_LABEL_
 | Identity | Role | Resource | Purpose |
 | --- | --- | --- | --- |
 | Developers (`proxy_invoker_identities`) | `roles/run.invoker` | The Cloud Run proxy service | Invoke the proxy. Nothing else. |
-| Developers | *none* on Vertex AI | Hub project (and any governed project) | They must not be able to call Vertex AI directly. |
-| Proxy service account | `roles/aiplatform.user` | Hub project when it is an allowed Vertex project (Terraform); every other project in `allowed_vertex_projects` (manual) | Call Gemini, Claude and other Vertex AI models. |
-| Proxy service account | `roles/logging.logWriter` | Hub project | Write application logs. |
-| Proxy service account | `roles/cloudtrace.agent` | Hub project | Export OpenTelemetry spans to Cloud Trace. |
+| Developers | *none* on Vertex AI | Proxy project (and any governed project) | They must not be able to call Vertex AI directly. |
+| Proxy service account | `roles/aiplatform.user` | Proxy project when it is an allowed Vertex project (Terraform); every other project in `allowed_vertex_projects` (manual) | Call Gemini, Claude and other Vertex AI models. |
+| Proxy service account | `roles/logging.logWriter` | Proxy project | Write application logs. |
+| Proxy service account | `roles/cloudtrace.agent` | Proxy project | Export OpenTelemetry spans to Cloud Trace. |
 | Cloud Logging sink writer identity | `roles/bigquery.dataEditor` | Usage dataset | Deliver usage events to BigQuery. |
 
 The proxy itself has no BigQuery permissions: usage reaches BigQuery through the Cloud Logging sink.
@@ -60,7 +60,7 @@ Configuring a client to use the proxy only changes how that client routes reques
 
 ## Third-party model terms
 
-Because Vertex AI calls are made with the proxy service account in the hub project, publisher terms for third-party models (for example Anthropic Claude in Model Garden) are accepted once by a cloud administrator in the hub project. Developers do nothing in the Google Cloud console.
+Because Vertex AI calls are made with the proxy service account in the proxy project, publisher terms for third-party models (for example Anthropic Claude in Model Garden) are accepted once by a cloud administrator in the proxy project. Developers do nothing in the Google Cloud console.
 
 ## Data handling
 

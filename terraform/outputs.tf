@@ -1,17 +1,17 @@
-# Outputs: identifiers and URLs of the hub project and the proxy, DNS records for the custom domain, notification channels and usage analytics objects.
+# Outputs: identifiers and URLs of the proxy project and the proxy, DNS records for the custom domain, notification channels and usage analytics objects.
 
 #
 # ------------------ OUTPUTS ------------------
 #
 
-output "hub_project_id" {
-  description = "Project ID of the central Hub project hosting the Google Agent Platform for Copilot Chat - Proxy"
-  value       = google_project.hub_project.project_id
+output "proxy_project_id" {
+  description = "Project ID of the proxy project hosting the Google Agent Platform for Copilot Chat - Proxy"
+  value       = google_project.proxy_project.project_id
 }
 
-output "hub_project_number" {
-  description = "Project Number of the central Hub project"
-  value       = google_project.hub_project.number
+output "proxy_project_number" {
+  description = "Project Number of the proxy project"
+  value       = google_project.proxy_project.number
 }
 
 output "proxy_service_uri" {
@@ -26,12 +26,12 @@ output "proxy_service_account_email" {
 
 output "usage_bigquery_table" {
   description = "Fully-qualified usage log table populated by the Cloud Logging sink"
-  value       = "${google_project.hub_project.project_id}.${google_bigquery_dataset.ai_usage.dataset_id}.${google_bigquery_table.ai_usage_logs.table_id}"
+  value       = "${google_project.proxy_project.project_id}.${google_bigquery_dataset.ai_usage.dataset_id}.${google_bigquery_table.ai_usage_logs.table_id}"
 }
 
 output "usage_bigquery_view" {
   description = "Fully-qualified usage report view with named columns and numeric/timestamp casts"
-  value       = "${google_project.hub_project.project_id}.${google_bigquery_dataset.ai_usage.dataset_id}.${google_bigquery_table.ai_usage_events_normalized.table_id}"
+  value       = "${google_project.proxy_project.project_id}.${google_bigquery_dataset.ai_usage.dataset_id}.${google_bigquery_table.ai_usage_events_normalized.table_id}"
 }
 
 output "usage_log_sink_name" {
@@ -51,9 +51,9 @@ output "notification_channels" {
   }
 }
 
-output "hub_project_budget" {
-  description = "Billing Budget resource name for the central Hub project"
-  value       = google_billing_budget.hub_project_budget.name
+output "proxy_project_budget" {
+  description = "Billing Budget resource name for the proxy project"
+  value       = google_billing_budget.proxy_project_budget.name
 }
 
 output "proxy_invoker_identities" {

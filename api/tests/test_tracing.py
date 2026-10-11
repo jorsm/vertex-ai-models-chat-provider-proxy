@@ -68,7 +68,7 @@ def trace_client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TraceClient]:
         "TRACE_ENABLED": "true",
         "TRACE_SAMPLING_RATIO": "1",
         "TRACE_EXPORT_TIMEOUT_MS": "1000",
-        "HUB_PROJECT_ID": "test-hub",
+        "PROXY_PROJECT_ID": "test-proxy",
         "ALLOWED_REGIONS": "global",
         "CHAT_USER_LABEL_KEY": "user",
         "CHAT_PROJECT_LABEL_KEY": "project",
@@ -334,7 +334,7 @@ def test_log_correlation_prefers_incoming_trace_header(trace_client: TraceClient
         log_event("INFO", "Trace correlation test", request=flask_request)
 
     entry = json.loads(capsys.readouterr().out)
-    expect_equal(entry["logging.googleapis.com/trace"], f"projects/test-hub/traces/{incoming_trace_id}")
+    expect_equal(entry["logging.googleapis.com/trace"], f"projects/test-proxy/traces/{incoming_trace_id}")
     expect_equal(entry["logging.googleapis.com/spanId"], "000000000000002a")
     expect(entry["logging.googleapis.com/trace_sampled"] is True)
 
@@ -442,13 +442,13 @@ def test_cloud_trace_export_warns_without_stacktrace_or_retry(
                     "private credentials must not be logged",
                 )
 
-    exporter = WarningCloudTraceSpanExporter(project_id="test-hub", client=Client())
+    exporter = WarningCloudTraceSpanExporter(project_id="test-proxy", client=Client())
     try:
         result = exporter.export(spans)
     finally:
         provider.shutdown()
     expect_equal(len(calls), 1)
-    expect_equal(calls[0].name, "projects/test-hub")
+    expect_equal(calls[0].name, "projects/test-proxy")
     expect_equal(len(calls[0].spans), 1)
     output = capsys.readouterr().out
     expect_not_in("Traceback", output + caplog.text)
@@ -473,7 +473,7 @@ def test_failed_cloud_trace_export_does_not_interrupt_inference(trace_client: Tr
             raise DeadlineExceeded("export unavailable")
 
     exporter = tracing.WarningCloudTraceSpanExporter(
-        project_id="test-hub",
+        project_id="test-proxy",
         client=Client(),
     )
     tracing.state.provider.add_span_processor(SimpleSpanProcessor(exporter))

@@ -1,19 +1,19 @@
 ############################################################
 # BILLING BUDGETS & ALERTS
 ############################################################
-# Monthly billing budget of the hub project, with threshold and forecast alerts sent to the shared notification channels.
+# Monthly billing budget of the proxy project, with threshold and forecast alerts sent to the shared notification channels.
 
-# Central billing budget for the Hub project with email notifications
-resource "google_billing_budget" "hub_project_budget" {
+# Central billing budget for the proxy project with email notifications
+resource "google_billing_budget" "proxy_project_budget" {
   depends_on = [
-    google_project_service.hub_services
+    google_project_service.proxy_services
   ]
 
   billing_account = var.billing_account_id
-  display_name    = "Budget - ${google_project.hub_project.project_id}"
+  display_name    = "Budget - ${google_project.proxy_project.project_id}"
 
   budget_filter {
-    projects        = ["projects/${google_project.hub_project.number}"]
+    projects        = ["projects/${google_project.proxy_project.number}"]
     calendar_period = "MONTH"
   }
 
