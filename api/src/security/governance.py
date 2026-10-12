@@ -7,39 +7,21 @@ and injects sanitized governance labels into payloads and headers.
 import base64
 import json
 import re
+from dataclasses import dataclass
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 
+from catalog.discovery import get_allowed_model_specs
 from config import settings
+from security.effort import EffortError, enforce_model_effort
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-_MODEL_POLICY_SUFFIXES = ("-high", "-medium", "-max")
-_HIGH_SUFFIX = "-high"
 _MAX_LABEL_LENGTH = 63
 _MANAGED_BY = "copilot-chat-proxy"
 _CONFIG_PASSTHROUGH_KEYS = ("generationConfig", "systemInstruction", "tools", "safetySettings")
-
-
-def _is_model_allowed(model_id: str, allowed_models: list[str]) -> bool:
-    """Match both catalog aliases and the upstream model selected by an SDK.
-
-    Claude catalog entries such as ``claude-sonnet-5-5-medium`` are policy
-    profiles. The Anthropic SDK sends their shared Vertex model version
-    (``claude-sonnet-5-5``) in the URL, so an authorized profile must also
-    authorize that exact upstream version. Only the known policy suffixes are
-    removed; arbitrary prefixes or sibling model versions remain denied.
-    """
-    model_id = model_id.replace(".", "-")
-    for allowed_model in allowed_models:
-        allowed = allowed_model.replace(".", "-")
-        if model_id == allowed:
-            return True
-        for suffix in _MODEL_POLICY_SUFFIXES:
-            if allowed.endswith(suffix) and model_id == allowed.removesuffix(suffix):
-                return True
-    return False
+_MODEL_ROUTE = re.compile(r"/v1/projects/(?P<project>[a-zA-Z0-9_.@-]+)/locations/(?P<region>[a-zA-Z0-9_-]+)/publishers/(?P<publisher>[a-zA-Z0-9_-]+)/models/(?P<version>[a-zA-Z0-9_.@-]+):(?P<action>[a-zA-Z0-9_]+)")
 
 
 class GovernanceError(Exception):
@@ -50,6 +32,16 @@ class GovernanceError(Exception):
         self.status_code = status_code
         self.message = message
         super().__init__(message)
+
+
+@dataclass
+class GovernedRequest:
+    """A validated native request and the model policy used to authorize it."""
+
+    model_id: str
+    body: dict[str, Any]
+    headers: dict[str, str]
+    model_spec: dict[str, Any]
 
 
 def sanitize_gcp_label(value: str) -> str:
@@ -70,32 +62,9 @@ def sanitize_gcp_label(value: str) -> str:
     return sanitized[:_MAX_LABEL_LENGTH] if sanitized else "unknown"
 
 
-def extract_model_id(path: str, body_json: dict[str, Any] | None) -> str:
-    """Extract the model ID from the Vertex AI REST path or JSON body as sent by the VS Code extension.
-
-    - Path format: /models/{model_id}:action (Gemini & Claude SDKs)
-    - Body format: body["model"] (OpenAI-compatible / Grok).
-    """
-    path_match = re.search(r"/models/([^/:]+)", path)
-    if path_match:
-        return path_match.group(1)
-
-    if body_json and isinstance(body_json, dict) and "model" in body_json:
-        return str(body_json["model"])
-
-    return ""
-
-
-def extract_project(path: str) -> str:
-    """Extract the Vertex project from /projects/{project}/locations/... paths."""
-    match = re.search(r"/projects/([^/]+)/locations/", path)
-    return match.group(1) if match else ""
-
-
-def extract_region(path: str) -> str:
-    """Extract the Vertex location from /projects/{project}/locations/{region}/... paths."""
-    match = re.search(r"/locations/([^/]+)/", path)
-    return match.group(1) if match else ""
+def parse_model_route(path: str) -> re.Match[str] | None:
+    """Match a native Vertex model route (project, region, publisher, version, action), or None."""
+    return _MODEL_ROUTE.fullmatch(path)
 
 
 def _first_label(labels: object, key: str) -> str | None:
@@ -190,8 +159,8 @@ def _unwrap_config(body_json: dict[str, Any]) -> None:
             body_json[key] = config[key]
 
 
-def _enforce_gemini_body(body_json: dict[str, Any], model_id: str, labels: dict[str, str]) -> None:
-    """Inject the governance labels (and thinking level for -high aliases) into a Gemini body."""
+def _enforce_gemini_body(body_json: dict[str, Any], labels: dict[str, str]) -> None:
+    """Unwrap the Gemini body and inject the enforced billing labels."""
     _unwrap_config(body_json)
     body_labels = _ensure_dict(body_json, "labels")
     # Client labels are remapped to the billing keys: drop the raw ones so unsanitized values never reach Vertex AI
@@ -200,11 +169,6 @@ def _enforce_gemini_body(body_json: dict[str, Any], model_id: str, labels: dict[
             body_labels.pop(chat_key, None)
             body_labels.pop(chat_key.lower(), None)
     body_labels.update(labels)
-
-    # Thinking model alias (-high): inject thinkingConfig HIGH into generationConfig
-    if model_id.endswith(_HIGH_SUFFIX):
-        generation_config = _ensure_dict(body_json, "generationConfig")
-        generation_config.setdefault("thinkingConfig", {"thinkingLevel": "HIGH"})
 
     # Vertex AI rejects "Unknown field: model" for Gemini
     body_json.pop("model", None)
@@ -220,48 +184,53 @@ def _strip_client_labels(body_json: dict[str, Any]) -> None:
             body_json.pop("config", None)
 
 
-def validate_model_and_enforce_policy(
+def enforce_request_policy(
     path: str,
     body_json: dict[str, Any] | None,
     user_email: str,
     headers: dict[str, str] | None = None,
-) -> tuple[str, dict[str, Any] | None, dict[str, str]]:
+) -> GovernedRequest:
     """Validate model, project and region allowlists & deprecations and enforce governance labels.
 
     Enforces presence of required labels according to configuration.
     Injects a third strict label containing the authenticated user email from Google OIDC.
 
     Returns:
-      (model_id, modified_body_json, extra_headers)
+      The governed request and the model policy snapshot used to authorize it.
 
     Raises:
       GovernanceError(400) if model, project or region is not allowed or if required labels are missing.
 
     """
-    model_id = extract_model_id(path, body_json)
-    if not model_id:
-        raise GovernanceError(HTTPStatus.BAD_REQUEST, "No model specified in the request.")
-
-    if not _is_model_allowed(model_id, settings.allowed_models):
+    route = parse_model_route(path)
+    if route is None or any(route[key] in (".", "..") for key in ("project", "version")):
+        raise GovernanceError(HTTPStatus.BAD_REQUEST, "Unsupported Vertex model route.")
+    model_id = route["version"]
+    publisher = route["publisher"]
+    model_spec = next((model for model in get_allowed_model_specs() if model["version"] == model_id and model["vendor"] == publisher and publisher in ("google", "anthropic")), None)
+    if model_spec is None:
         raise GovernanceError(
             HTTPStatus.BAD_REQUEST,
             f"Model '{model_id}' is not in the approved allowlist. Approved models: {settings.allowed_models}",
         )
 
     # Project and region are chosen by the client; the allowlists bound the choice
-    project = extract_project(path)
+    project = route["project"]
     if not project or project not in settings.allowed_vertex_projects:
         raise GovernanceError(
             HTTPStatus.BAD_REQUEST,
             f"Project '{project}' is not in the approved list. Approved projects: {settings.allowed_vertex_projects}",
         )
 
-    region = extract_region(path)
+    region = route["region"]
     if not region or region not in settings.allowed_regions:
         raise GovernanceError(
             HTTPStatus.BAD_REQUEST,
             f"Region '{region}' is not in the approved list. Approved regions: {settings.allowed_regions}",
         )
+
+    if not isinstance(body_json, dict):
+        raise GovernanceError(HTTPStatus.BAD_REQUEST, "Request body must be a JSON object.")
 
     chat_project_key = settings.chat_project_label_key
     chat_user_key = settings.chat_user_label_key
@@ -276,11 +245,15 @@ def validate_model_and_enforce_policy(
 
     # Gemini accepts root JSON labels. Anthropic rejects that field, so Claude
     # receives the same enforced labels only through X-Vertex-AI-Labels below.
-    if body_json and isinstance(body_json, dict):
-        if model_id.lower().startswith("claude"):
-            _strip_client_labels(body_json)
-        else:
-            _enforce_gemini_body(body_json, model_id, labels)
+    if model_spec["vendor"] == "anthropic":
+        _strip_client_labels(body_json)
+    else:
+        _enforce_gemini_body(body_json, labels)
+    if not path.endswith(":countTokens"):
+        try:
+            enforce_model_effort(model_spec, body_json)
+        except EffortError as error:
+            raise GovernanceError(HTTPStatus.BAD_REQUEST, str(error)) from error
 
     encoded_labels = base64.b64encode(json.dumps(labels).encode("utf-8")).decode("utf-8")
-    return model_id, body_json, {"X-Vertex-AI-Labels": encoded_labels}
+    return GovernedRequest(model_id, body_json, {"X-Vertex-AI-Labels": encoded_labels}, model_spec)

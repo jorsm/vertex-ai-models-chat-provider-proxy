@@ -20,6 +20,9 @@ SELECT
     jsonPayload.endpoint_action AS endpoint_action,
     jsonPayload.model_requested AS model_requested,
     jsonPayload.model_upstream AS model_upstream,
+    -- Logging adds this optional field after the first effort-aware event. JSON extraction
+    -- lets this view deploy before that addition and returns NULL for older rows.
+    JSON_VALUE(TO_JSON_STRING(jsonPayload), '$.model_effort') AS model_effort,
     jsonPayload.model_family AS model_family,
     jsonPayload.model_version AS model_version,
     SAFE_CAST(jsonPayload.max_input_tokens AS INT64) AS max_input_tokens,

@@ -20,7 +20,7 @@ flowchart LR
 ## Features
 
 - **Authentication.** Google OIDC ID tokens; invocation rights managed with Cloud Run IAM.
-- **Model and region allowlists**, with explicit effort variants (`-high`, `-medium`, `-max`). See [Governance](docs/04-governance.md).
+- **Model and region allowlists**, using canonical catalog IDs and validated per-request thinking effort. See [Governance](docs/04-governance.md).
 - **100% cost attribution.** Labels enforced server-side, including one derived from the verified identity. See [Security and IAM](docs/03-security-and-iam.md).
 - **Zero-buffering streaming** of SSE and chunked responses for Gemini and Claude.
 - **Usage analytics.** One structured event per inference, exported to BigQuery with token, cache, latency and estimated-cost fields. No prompts or responses are stored. See [Observability](docs/08-observability.md).

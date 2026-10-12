@@ -1,6 +1,8 @@
 # 4. Governance <!-- omit in toc -->
 
 - [Model allowlist](#model-allowlist)
+- [Thinking effort](#thinking-effort)
+- [Project allowlist](#project-allowlist)
 - [Region allowlist](#region-allowlist)
 - [Cost-attribution labels](#cost-attribution-labels)
   - [How labels reach Vertex AI](#how-labels-reach-vertex-ai)
@@ -12,16 +14,24 @@ Governance rules are applied to every inference request, after authentication an
 
 ## Model allowlist
 
-Only models listed in `ALLOWED_MODELS` can be used. The model ID is taken from the request path (`/models/{model}:{action}`, used by the Gemini and Claude SDKs) or, for OpenAI-compatible calls, from the `model` field of the body.
+`ALLOWED_MODELS` contains exact canonical IDs from the configured model catalog, for example `claude-sonnet-5-5` and `gemini-3.8-flash`. An entry missing from the catalog grants no access.
 
-Matching rules:
+The request path must use an allowed catalog entry's literal `version` and matching `vendor` under `/publishers/{vendor}/models/{version}:{action}`. The supported publishers are `google` and `anthropic`. The catalog ID and backend version may differ; clients use the advertised `version` for inference.
 
-- Dots and hyphens are interchangeable: `gemini-3.8-flash` equals `gemini-3-8-flash`.
-- **Effort variants must be listed explicitly.** `-high`, `-medium` and `-max` entries are separate models. Allowing `gemini-3.8-flash` does not allow `gemini-3.8-flash-high`.
-- Allowing a variant also allows its **upstream model ID**, because SDKs send the underlying version in the URL. For example `claude-sonnet-5-5-medium` authorizes requests for `claude-sonnet-5-5`, but not `claude-sonnet-5-5-high` or `claude-sonnet-5-6`.
-- Anything else, including arbitrary prefixes and sibling versions, is rejected.
+Matching is exact: dots, hyphens, prefixes and suffixes are not normalized, and the proxy does not rewrite the backend model name. Legacy effort aliases such as `claude-sonnet-5-5-high` grant no access unless they are literal catalog entries. An unavailable catalog with no valid cached copy denies inference.
 
-Variants are resolved before the upstream call: a `-high` suffix is stripped from the path sent to Vertex AI. For Gemini, `-high` additionally injects `generationConfig.thinkingConfig.thinkingLevel = "HIGH"` unless the client already set a `thinkingConfig`.
+## Thinking effort
+
+Models can declare `effort: {"values": [...], "default": "..."}` in the catalog. This policy is included in discovery and enforced on inference before the context check or any upstream request. Omission selects the declared default; malformed fields and unsupported values return `400 FAILED_PRECONDITION`.
+
+| Provider | Native request field | Forwarded value |
+| --- | --- | --- |
+| Gemini | `generationConfig.thinkingConfig.thinkingLevel` | Catalog choice in uppercase, for example `HIGH` |
+| Claude | `output_config.effort` | Exact lowercase catalog choice, for example `high` |
+
+On Gemini models declaring named effort, `thinkingBudget` is rejected; choose an advertised `thinkingLevel`. Claude's optional message-level `output_config.effort` overrides are also validated, without adding defaults to historical messages. Models without an effort declaration reject named effort controls.
+
+The proxy preserves other thinking options (including Claude adaptive or enabled modes), output formats, signed thinking history and tool payloads. Explicit `:countTokens` requests skip effort validation and default injection, while authentication, model/project/region policy and label enforcement still apply.
 
 ## Project allowlist
 
@@ -76,9 +86,10 @@ The proxy looks for client labels, using the chat keys, in this order, in: a hea
 
 `GET /discovery` returns the model catalog the client may show:
 
-- The master catalog is downloaded from `MODELS_CATALOG_URL` (a JSON document following the `models.schema.json` format of the VS Code extension) and cached in memory for 5 minutes. If a refresh fails, the previous copy is served.
-- Only models listed in `ALLOWED_MODELS` are returned; unlisted models are never synthesized.
-- `DISCOVERY_MAX_INPUT_TOKENS` (> 0) overrides `maxInputTokens` for every model so clients stay below the context limit.
+- The master catalog is downloaded from `MODELS_CATALOG_URL` and cached in memory for 5 minutes after validating routing, native input capacity and optional effort metadata. If a refresh fails, only a previously valid copy from the same URL can be served. Changing the URL clears the cache.
+- Only exact catalog IDs listed in `ALLOWED_MODELS` are returned; unlisted models are never synthesized.
+- Optional `effort` metadata is included without a capability header or negotiation marker.
+- `DISCOVERY_MAX_INPUT_TOKENS` (> 0) caps each model's advertised `maxInputTokens` at the smaller of its native capacity and the configured policy value.
 - `regionPriority` is filtered to `ALLOWED_REGIONS`.
 
 The same catalog provides the **pricing** used to estimate costs (see [Observability](08-observability.md)).

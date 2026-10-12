@@ -13,14 +13,14 @@ from flask import Request, Response, jsonify, stream_with_context
 from google.auth.exceptions import GoogleAuthError
 from opentelemetry import trace
 
-from catalog.discovery import get_model_spec
 from config import settings
 from security.auth import AuthError, authenticate_caller, display_name_from_claims
+from security.effort import effective_model_effort
 from security.governance import (
     GovernanceError,
-    extract_model_id,
-    extract_region,
-    validate_model_and_enforce_policy,
+    GovernedRequest,
+    enforce_request_policy,
+    parse_model_route,
 )
 from telemetry.logger import ErrorResponseCapture, log_event
 from telemetry.observability import log_inference_summary
@@ -45,7 +45,8 @@ _UPSTREAM_ERRORS = (httpx.HTTPError, GoogleAuthError, ValueError, OSError)
 
 def _logged_region(path: str) -> str | None:
     """Return the request region only when policy allows it; client values are unbounded."""
-    region = extract_region(path)
+    route = parse_model_route(path)
+    region = route["region"] if route else None
     return region if region in settings.allowed_regions else None
 
 
@@ -93,6 +94,8 @@ class _InferenceContext:
     start_time: float = field(default_factory=time.perf_counter)
     claims: dict[str, Any] = field(default_factory=dict)
     user_email: str | None = None
+    model_effort: str | None = None
+    model_spec: dict[str, Any] | None = None
 
     def elapsed_ms(self) -> float:
         """Milliseconds elapsed since the request started."""
@@ -110,6 +113,7 @@ class _InferenceContext:
             "principal_email": self.user_email,
             "principal_subject": self.claims.get("sub"),
             "principal_display_name": display_name_from_claims(self.claims),
+            "model_effort": self.model_effort,
         }
 
     def log_early_failure(self, outcome: str, status: int, model_id: str | None = None) -> None:
@@ -117,9 +121,9 @@ class _InferenceContext:
         log_inference_summary(
             {
                 **self.base_event(timestamp_iso()),
-                "provider": provider_for_model(model_id or ""),
+                "provider": provider_for_model(self.model_spec),
                 "model_requested": model_id or "unknown",
-                "model_upstream": upstream_model_for(model_id) if model_id else "unknown",
+                "model_upstream": upstream_model_for(model_id, self.model_spec) if model_id else "unknown",
                 "vertex_region": _logged_region(self.request.path),
                 "http_status": status,
                 "outcome": outcome,
@@ -180,11 +184,11 @@ def _parse_body(request: Request) -> tuple[bytes, Any]:
     return raw_body, body_json
 
 
-def _enforce_governance(ctx: _InferenceContext, body_json: Any) -> tuple[str, Any, dict[str, str]]:
+def _enforce_governance(ctx: _InferenceContext, body_json: Any) -> GovernedRequest:
     """Apply model, region and label policy, or abort with a 400 response."""
     try:
         with stage_span("governance"):
-            result = validate_model_and_enforce_policy(
+            result = enforce_request_policy(
                 ctx.request.path,
                 body_json,
                 ctx.user_email,
@@ -198,7 +202,7 @@ def _enforce_governance(ctx: _InferenceContext, body_json: Any) -> tuple[str, An
             f"Governance check failed: {gov_err.message}",
             request=ctx.request,
             user_email=ctx.user_email,
-            model_id=extract_model_id(ctx.request.path, body_json),
+            model_id=route["version"] if (route := parse_model_route(ctx.request.path)) else "",
             status_code=gov_err.status_code,
             error_response=payload,
         )
@@ -282,7 +286,8 @@ class _MeteredStream:
         self.model_id = model_id
         self.upstream = upstream
         self.labels = labels
-        self.provider = provider_for_model(model_id)
+        self.model_spec = ctx.model_spec
+        self.provider = provider_for_model(self.model_spec)
         self.accumulator = UsageAccumulator(
             provider=self.provider,
             content_type=upstream.headers.get("Content-Type", "application/json"),
@@ -339,7 +344,7 @@ class _MeteredStream:
         if not usage["usage_complete"] and self.outcome == "completed":
             self.outcome = "usage_missing"
 
-        model_spec = get_model_spec(self.model_id)
+        model_spec = self.model_spec
         spec = model_spec or {}
         path = ctx.request.path
         log_inference_summary(
@@ -351,7 +356,7 @@ class _MeteredStream:
                 "effective_labels": self.labels,
                 "provider": self.provider,
                 "model_requested": self.model_id,
-                "model_upstream": upstream_model_for(self.model_id),
+                "model_upstream": upstream_model_for(self.model_id, model_spec),
                 "model_family": spec.get("family"),
                 "model_version": spec.get("version"),
                 "max_input_tokens": spec.get("maxInputTokens"),
@@ -381,7 +386,11 @@ def handle_inference(request: Request) -> Response:
     try:
         _authenticate(ctx)
         raw_body, body_json = _parse_body(request)
-        model_id, modified_body, extra_headers = _enforce_governance(ctx, body_json)
+        governed = _enforce_governance(ctx, body_json)
+        model_id, modified_body, extra_headers = governed.model_id, governed.body, governed.headers
+        ctx.model_spec = governed.model_spec
+        if not request.path.endswith(":countTokens"):
+            ctx.model_effort = effective_model_effort(governed.model_spec, modified_body)
 
         with stage_span("request.encoding"):
             content = json.dumps(modified_body).encode("utf-8") if modified_body is not None else raw_body

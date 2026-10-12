@@ -29,6 +29,8 @@ With `proxyUrl` set, the extension:
 
 `vertexAiChat.projectId` must be a project the **proxy service account** can use for Vertex AI calls (normally the proxy project). Refer to the extension's own documentation for the exact current behavior and for providers that do not yet support proxy mode.
 
+Discovery includes each model's optional effort choices and default without negotiation. Keep the canonical model ID for selection, use its advertised `version` and `vendor` in the inference path, and send effort in the native provider payload. Changing effort does not select a different model ID. See [Thinking effort](04-governance.md#thinking-effort).
+
 ## Obtaining an ID token
 
 For command-line tests and other clients:
@@ -49,11 +51,12 @@ curl -N -X POST \
   "https://copilot-chat-proxy.example.com/v1/projects/my-copilot-chat-proxy/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent?alt=sse" \
   -d '{
         "contents": [{"role": "user", "parts": [{"text": "Say hello"}]}],
+        "generationConfig": {"thinkingConfig": {"thinkingLevel": "HIGH"}},
         "labels": {"vscode-vertex-ai-user": "jane", "vscode-vertex-ai-project": "my-repo"}
       }'
 ```
 
-The proxy adds the verified-caller label and `managed-by`, forwards the request to Vertex AI and streams the answer back.
+Use a level advertised by discovery; omit `thinkingLevel` to use the catalog default. The proxy adds the verified-caller label and `managed-by`, forwards the request to Vertex AI and streams the answer back.
 
 ## Example: Claude labels
 
@@ -64,11 +67,13 @@ LABELS=$(printf '{"vscode-vertex-ai-user":"jane","vscode-vertex-ai-project":"my-
 # send:  X-Vertex-AI-Labels: $LABELS
 ```
 
+For Claude, put a lowercase advertised effort in `output_config`, for example `"output_config": {"effort": "high"}`, or omit it to use the catalog default. Keep the model's other native options, including `thinking`, as required by the client.
+
 ## Handling errors
 
 | Status | Meaning | Client behavior |
 | --- | --- | --- |
-| 400 | Model, region or label policy violated, or context too large | Show `error.message`; do not retry |
+| 400 | Model/publisher, project, region, effort or label policy violated, or context too large | Show `error.message`; do not retry |
 | 401 / 403 | Not authenticated or not authorized to invoke the proxy | Ask the user to re-authenticate (`gcloud auth login`) or request access |
 | 404 / 405 | Wrong path or method | Check the base URL and path shape |
 | 429 / 502 / 503 | Rate limit, upstream or proxy failure | May be retried with backoff (the extension does) |

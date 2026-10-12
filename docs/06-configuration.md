@@ -21,7 +21,7 @@ Variables marked *required* have no default: the service refuses to use a missin
 | `PROXY_PROJECT_ID` | yes | Project hosting the proxy; used for telemetry and trace correlation, and as the default Vertex AI project | `project_id` |
 | `ALLOWED_VERTEX_PROJECTS` | no | Comma-separated list (or JSON array) of Vertex AI project IDs clients may target; defaults to `PROXY_PROJECT_ID` | `allowed_vertex_projects` (empty list = proxy project) |
 | `ALLOWED_REGIONS` | yes | Comma-separated list (or JSON array) of permitted Vertex AI locations, for example `global` | `allowed_vertex_regions` |
-| `ALLOWED_MODELS` | yes | Comma-separated list (or JSON array) of permitted model IDs, including effort variants | `allowed_models` |
+| `ALLOWED_MODELS` | yes | Comma-separated list (or JSON array) of exact permitted canonical catalog IDs; effort is a request field | `allowed_models` |
 | `CHAT_USER_LABEL_KEY` | yes | Key under which the chat client sends the user (don't touch: fixed by the extension) | `chat_user_label_key` |
 | `CHAT_PROJECT_LABEL_KEY` | yes | Key under which the chat client sends the workspace (don't touch: fixed by the extension) | `chat_project_label_key` |
 | `BILLING_USER_LABEL_KEY` | yes | Billing label key that carries the client-declared user | `billing_user_label_key` |
@@ -29,10 +29,10 @@ Variables marked *required* have no default: the service refuses to use a missin
 | `BILLING_AUTH_USER_LABEL_KEY` | yes | Billing label key that carries the verified caller | `billing_auth_user_label_key` |
 | `REQUIRE_USER_LABEL` | yes | `true`/`false`: reject requests without the user label | `require_user_label` |
 | `REQUIRE_PROJECT_LABEL` | yes | `true`/`false`: reject requests without the project label | `require_project_label` |
-| `MODELS_CATALOG_URL` | yes | URL of the model catalog JSON used for discovery and pricing | `models_catalog_url` |
+| `MODELS_CATALOG_URL` | yes | URL of the validated model catalog used for authorization, discovery, effort and pricing | `models_catalog_url` |
 | `PROXY_BASE_URL` | yes | Public base URL, published in `/openapi.json` | `https://<custom_domain>` |
 | `MAX_CONTEXT_TOKENS` | yes | Request size limit in tokens; `<= 0` disables | `max_context_tokens` |
-| `DISCOVERY_MAX_INPUT_TOKENS` | yes | `maxInputTokens` advertised in `/discovery`; `<= 0` keeps catalog values | `discovery_max_input_tokens` |
+| `DISCOVERY_MAX_INPUT_TOKENS` | yes | Cap on each model's native `maxInputTokens` in `/discovery`; `<= 0` keeps catalog values | `discovery_max_input_tokens` |
 | `TRACE_ENABLED` | yes | `true`/`false`: export spans to Cloud Trace | `proxy_trace_enabled` |
 | `TRACE_SAMPLING_RATIO` | yes | Fraction (0 to 1) of inference traces exported | `proxy_trace_sampling_ratio` |
 | `TRACE_EXPORT_TIMEOUT_MS` | yes | Export RPC deadline and final flush wait in ms (> 0) | `proxy_trace_export_timeout_ms` |

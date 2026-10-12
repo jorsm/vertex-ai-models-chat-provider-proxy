@@ -198,24 +198,14 @@ class UsageAccumulator:
         }
 
 
-def provider_for_model(model_id: str) -> str:
-    """Return the provider name inferred from the model ID prefix."""
-    lowered = model_id.lower()
-    if lowered.startswith("claude"):
-        return "anthropic"
-    if lowered.startswith("gemini"):
-        return "google"
-    if lowered.startswith("grok"):
-        return "xai"
-    return "unknown"
+def provider_for_model(model_spec: dict[str, Any] | None) -> str:
+    """Return the catalog vendor, or "unknown" for requests rejected before model resolution."""
+    return model_spec["vendor"] if model_spec is not None else "unknown"
 
 
-def upstream_model_for(model_id: str) -> str:
-    """Return the upstream Vertex model ID with any policy profile suffix removed."""
-    for suffix in ("-high", "-medium", "-max"):
-        if model_id.endswith(suffix):
-            return model_id[: -len(suffix)]
-    return model_id
+def upstream_model_for(model_id: str, model_spec: dict[str, Any] | None = None) -> str:
+    """Return the catalog's literal backend version without changing model names."""
+    return model_spec["version"] if model_spec is not None else model_id
 
 
 def pricing_fields(

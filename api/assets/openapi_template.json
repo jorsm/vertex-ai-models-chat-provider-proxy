@@ -92,7 +92,7 @@
           "Inference"
         ],
         "summary": "Vertex AI SDK endpoint as called by VS Code Extension",
-        "description": "Exact path invoked by @google/genai and @anthropic-ai/vertex-sdk when baseURL is remapped to this proxy.",
+        "description": "Native Vertex path used by @google/genai and @anthropic-ai/vertex-sdk. The model is the exact catalog version for an allowlisted canonical ID and matching publisher. Gemini effort uses generationConfig.thinkingConfig.thinkingLevel; Claude uses output_config.effort. Omission applies the model's discovery default. Unsupported effort is rejected before upstream calls; countTokens does not inject or validate generation effort.",
         "security": [
           {
             "GoogleBearerAuth": []
@@ -287,6 +287,9 @@
             "type": "integer",
             "example": 65536
           },
+          "effort": {
+            "$ref": "#/components/schemas/EffortPolicy"
+          },
           "capabilities": {
             "type": "object",
             "properties": {
@@ -320,6 +323,35 @@
                 "example": 0.0
               }
             }
+          }
+        }
+      },
+      "EffortPolicy": {
+        "type": "object",
+        "description": "Optional named effort policy advertised directly in discovery without capability negotiation. Native requests must use one of these values; omission uses default.",
+        "required": [
+          "values",
+          "default"
+        ],
+        "properties": {
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "default": {
+            "type": "string",
+            "description": "A named choice from values.",
+            "example": "medium"
           }
         }
       },

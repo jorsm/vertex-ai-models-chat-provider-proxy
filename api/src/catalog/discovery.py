@@ -6,7 +6,9 @@ Compatible with schemas/models.schema.json from vertex-ai-models-chat-provider.
 """
 
 import json
+import re
 import time
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
@@ -16,6 +18,8 @@ from config import settings
 
 _CACHE_TTL_SECONDS: float = 300.0  # 5 minutes cache
 _REQUEST_TIMEOUT_SECONDS: float = 5.0
+_CATALOG_COMPONENT = re.compile(r"[a-zA-Z0-9_.@-]+")
+_MAX_ROUTING_LENGTH = 256
 
 
 @dataclass
@@ -24,9 +28,56 @@ class _CatalogCache:
 
     catalog: dict[str, Any] | None = None
     fetched_at: float = 0.0
+    source_url: str | None = None
 
 
 _cache = _CatalogCache()
+
+
+class CatalogError(ValueError):
+    """The upstream catalog cannot be safely cached or used as routing policy."""
+
+
+def _validate_effort_policy(effort: Any) -> None:
+    """Require unique named choices and a default belonging to those choices."""
+    if not isinstance(effort, dict):
+        raise CatalogError("Model effort must be an object")
+    values = effort.get("values")
+    if not isinstance(values, list) or not values or any(not isinstance(value, str) or not value.strip() or value != value.strip() for value in values):
+        raise CatalogError("Model effort requires nonempty named choices")
+    if len(values) != len(set(values)) or effort.get("default") not in values:
+        raise CatalogError("Model effort requires unique choices and a default from those choices")
+
+
+def _valid_routing_value(value: Any, *, namespaced: bool = False) -> bool:
+    """Match the extension's literal routing schema without URL or dot-segment aliases."""
+    if not isinstance(value, str) or len(value) > _MAX_ROUTING_LENGTH:
+        return False
+    components = value.split("/") if namespaced else [value]
+    return all(component not in (".", "..") and _CATALOG_COMPONENT.fullmatch(component) is not None for component in components)
+
+
+def _validate_catalog(catalog: Any) -> dict[str, Any]:
+    """Validate routing, capacity and effort policy before accepting a catalog."""
+    if not isinstance(catalog, dict) or not isinstance(catalog.get("candidateModels"), list):
+        raise CatalogError("Catalog must contain a candidateModels array")
+    regions = catalog.get("regionPriority")
+    if not isinstance(regions, list) or any(not isinstance(region, str) or not region.strip() for region in regions):
+        raise CatalogError("Catalog must contain a regionPriority string array")
+    seen_ids = set()
+    for model in catalog["candidateModels"]:
+        if not isinstance(model, dict) or any(not _valid_routing_value(model.get(key), namespaced=key == "version") for key in ("id", "version", "vendor")):
+            raise CatalogError("Catalog models require literal id, version and vendor strings")
+        if model["id"] in seen_ids:
+            raise CatalogError("Catalog contains duplicate model IDs")
+        seen_ids.add(model["id"])
+        capacity = model.get("maxInputTokens")
+        if type(capacity) is not int or capacity <= 0:
+            raise CatalogError("Catalog models require a positive maxInputTokens integer")
+        if "effort" not in model:
+            continue
+        _validate_effort_policy(model["effort"])
+    return catalog
 
 
 def _download_catalog(catalog_url: str) -> dict[str, Any] | None:
@@ -38,24 +89,34 @@ def _download_catalog(catalog_url: str) -> dict[str, Any] | None:
             timeout=_REQUEST_TIMEOUT_SECONDS,
         )
         response.raise_for_status()
-        data = json.loads(response.content.decode("utf-8-sig"))
+        data = _validate_catalog(json.loads(response.content.decode("utf-8-sig")))
     except httpx.HTTPError, ValueError:
         return None
-    return data if isinstance(data, dict) and "candidateModels" in data else None
+    return data
 
 
 def load_master_catalog() -> dict[str, Any]:
     """Return the master catalog from the configured URL, cached in memory and stale-tolerant."""
     now = time.time()
+    catalog_url = settings.models_catalog_url
+    if _cache.source_url != catalog_url:
+        _cache.catalog, _cache.fetched_at, _cache.source_url = None, 0.0, catalog_url
     if _cache.catalog is not None and (now - _cache.fetched_at) < _CACHE_TTL_SECONDS:
         return _cache.catalog
 
-    catalog = _download_catalog(settings.models_catalog_url)
+    catalog = _download_catalog(catalog_url)
     if catalog is not None:
         _cache.catalog, _cache.fetched_at = catalog, now
     if _cache.catalog is not None:
         return _cache.catalog
     return {"candidateModels": [], "regionPriority": settings.allowed_regions}
+
+
+def get_allowed_model_specs(catalog: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """Select exact catalog IDs in policy order without authorizing aliases."""
+    source = catalog if catalog is not None else load_master_catalog()
+    candidates = {model["id"]: model for model in source["candidateModels"]}
+    return [deepcopy(candidates[model_id]) for model_id in dict.fromkeys(settings.allowed_models) if model_id in candidates]
 
 
 def get_discovery_catalog() -> dict[str, Any]:
@@ -65,33 +126,11 @@ def get_discovery_catalog() -> dict[str, Any]:
     - regionPriority: settings.allowed_regions (e.g. ["global"]).
     """
     catalog = load_master_catalog()
-    raw_candidates = catalog.get("candidateModels", [])
-    allowed_list = settings.allowed_models
     override_max_input = settings.discovery_max_input_tokens
-
-    matched_models: list[dict[str, Any]] = []
-    seen_ids = set()
-
-    # Only explicit allowlist entries are exposed; effort variants are separate models.
-    for allowed in allowed_list:
-        if allowed in seen_ids:
-            continue
-        candidate = next((m for m in raw_candidates if m.get("id") == allowed), None)
-        if candidate is None:
-            # Preserve the dot/hyphen alias compatibility without matching prefixes.
-            normalized = allowed.replace(".", "-")
-            candidate = next(
-                (m for m in raw_candidates if m.get("id", "").replace(".", "-") == normalized),
-                None,
-            )
-            if candidate is not None:
-                candidate = {**candidate, "id": allowed}
-        if candidate is not None:
-            model_entry = dict(candidate)
-            if override_max_input > 0:
-                model_entry["maxInputTokens"] = override_max_input
-            matched_models.append(model_entry)
-            seen_ids.add(allowed)
+    matched_models = get_allowed_model_specs(catalog)
+    for model_entry in matched_models:
+        if override_max_input > 0:
+            model_entry["maxInputTokens"] = min(override_max_input, model_entry["maxInputTokens"])
 
     # Only regions granted by policy are exposed, keeping the catalog's priority order
     allowed_regions = settings.allowed_regions
@@ -101,38 +140,3 @@ def get_discovery_catalog() -> dict[str, Any]:
         filtered_regions = allowed_regions
 
     return {"candidateModels": matched_models, "regionPriority": filtered_regions}
-
-
-def get_model_spec(model_id: str) -> dict[str, Any] | None:
-    """Return model metadata and pricing from the discovery source.
-
-    Model aliases may use dots or hyphens interchangeably and policy profiles
-    may append ``-high``, ``-medium`` or ``-max``. Exact matches always win.
-    """
-    candidates = load_master_catalog().get("candidateModels", [])
-    if not isinstance(candidates, list):
-        return None
-
-    requested = model_id.replace(".", "-")
-    for candidate in candidates:
-        if str(candidate.get("id", "")).replace(".", "-") == requested:
-            return candidate
-
-    policy_suffixes = ("-high", "-medium", "-max")
-    base_requested = requested
-    for suffix in policy_suffixes:
-        if base_requested.endswith(suffix):
-            base_requested = base_requested[: -len(suffix)]
-            break
-
-    for candidate in candidates:
-        candidate_id = str(candidate.get("id", "")).replace(".", "-")
-        candidate_base = candidate_id
-        for suffix in policy_suffixes:
-            if candidate_base.endswith(suffix):
-                candidate_base = candidate_base[: -len(suffix)]
-                break
-        if candidate_base == base_requested:
-            return candidate
-
-    return None

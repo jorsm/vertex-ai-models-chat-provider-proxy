@@ -27,7 +27,6 @@ if TYPE_CHECKING:
 
 _CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
 _COUNT_TOKENS_FIELDS = ("contents", "systemInstruction", "system_instruction", "tools")
-_HIGH_SUFFIX = "-high"
 _PROJECT_LOCATION = re.compile(r"^v1/projects/[^/]+/locations/([a-z0-9-]+)/")
 _auth_request = GoogleAuthRequest()
 
@@ -90,12 +89,6 @@ def build_vertex_url(path: str) -> str:
     checked the region is allowed.
     """
     clean_path = path.lstrip("/")
-
-    # Resolve -high thinking alias to base model for Vertex AI endpoints
-    if f"{_HIGH_SUFFIX}:" in clean_path:
-        clean_path = clean_path.replace(f"{_HIGH_SUFFIX}:", ":")
-    elif clean_path.endswith(_HIGH_SUFFIX):
-        clean_path = clean_path.removesuffix(_HIGH_SUFFIX)
 
     if not clean_path.startswith("v1/"):
         clean_path = f"v1/{clean_path}"

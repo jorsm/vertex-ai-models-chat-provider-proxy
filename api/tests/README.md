@@ -1,5 +1,9 @@
 # Tests
 
+Unit tests use the committed catalog fixture and mocked inference/token-counting transports, so no model requests are billed. Catalog loader tests mock HTTP downloads explicitly. The fixture is the upstream extension catalog at `5fec9c5` (2026-10-12).
+
+`test_effort_contract.py` covers every advertised native effort and default, plain discovery without capability headers, exact catalog/backend/publisher authorization, signed tool-history preservation, per-message Claude effort, malformed/unsupported controls, Gemini budget rejection, countTokens payloads, catalog validation/cache isolation, and effort usage logs.
+
 Unit tests run offline. `test_integration_proxy.py` calls a deployed proxy and is skipped unless configured.
 
 ```bash

@@ -2,6 +2,7 @@
 
 import base64
 import json
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, NamedTuple, Never
 
 import httpx
@@ -15,10 +16,9 @@ from main import app
 from security.auth import AuthError, extract_bearer_token
 from security.governance import (
     GovernanceError,
-    _is_model_allowed,
-    extract_model_id,
+    enforce_request_policy,
+    parse_model_route,
     sanitize_gcp_label,
-    validate_model_and_enforce_policy,
 )
 from telemetry.logger import ErrorResponseCapture
 from vertex.client import build_vertex_url
@@ -53,7 +53,7 @@ def setup_test_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("BILLING_AUTH_USER_LABEL_KEY", "proxy-auth-user")
     monkeypatch.setenv(
         "ALLOWED_MODELS",
-        "claude-opus-5-5,claude-opus-5-5-high,claude-opus-5-5-max,claude-sonnet-5-5-high,claude-sonnet-5-5-medium,claude-sonnet-5-5-max,gemini-3.8-flash,gemini-3.8-flash-high",
+        "claude-opus-5-5,claude-sonnet-5-5,gemini-3.8-flash",
     )
     monkeypatch.setenv(
         "MODELS_CATALOG_URL",
@@ -81,13 +81,15 @@ def test_sanitize_gcp_label() -> None:
     expect_equal(sanitize_gcp_label(""), "unknown")
 
 
-def test_extract_model_id() -> None:
-    """Verify extract model id."""
-    path = "/v1/projects/my-proj/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent"
-    expect_equal(extract_model_id(path, None), "gemini-3.8-flash")
-
-    body = {"model": "claude-sonnet-5-5"}
-    expect_equal(extract_model_id("/v1/endpoints/openapi/chat/completions", body), "claude-sonnet-5-5")
+def test_parse_model_route() -> None:
+    """Verify the native Vertex route is parsed and other paths are not."""
+    route = parse_model_route("/v1/projects/my-proj/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent")
+    expect_is_not(route, None)
+    expect_equal(
+        (route["project"], route["region"], route["publisher"], route["version"], route["action"]),
+        ("my-proj", "global", "google", "gemini-3.8-flash", "streamGenerateContent"),
+    )
+    expect_is(parse_model_route("/v1/endpoints/openapi/chat/completions"), None)
 
 
 def test_missing_project_label_rejects_call() -> None:
@@ -99,7 +101,7 @@ def test_missing_project_label_rejects_call() -> None:
         "config": {"labels": {"vscode-vertex-ai-user": "dev_custom_nickname"}},
     }
     with pytest.raises(GovernanceError) as excinfo:
-        validate_model_and_enforce_policy(path, body, "jane.doe@example.com")
+        enforce_request_policy(path, body, "jane.doe@example.com")
     expect_equal(excinfo.value.status_code, 400)
     expect_in("Missing required label 'vscode-vertex-ai-project'", excinfo.value.message)
 
@@ -113,7 +115,7 @@ def test_missing_user_label_rejects_call() -> None:
         "config": {"labels": {"vscode-vertex-ai-project": "my-client-project"}},
     }
     with pytest.raises(GovernanceError) as excinfo:
-        validate_model_and_enforce_policy(path, body, "jane.doe@example.com")
+        enforce_request_policy(path, body, "jane.doe@example.com")
     expect_equal(excinfo.value.status_code, 400)
     expect_in("Missing required label 'vscode-vertex-ai-user'", excinfo.value.message)
 
@@ -132,11 +134,8 @@ def test_three_labels_enforced_strictly() -> None:
         },
     }
     # Authenticated caller on the proxy is jane.doe@example.com
-    _model_id, modified_body, extra_headers = validate_model_and_enforce_policy(
-        path,
-        body,
-        "jane.doe@example.com",
-    )
+    governed = enforce_request_policy(path, body, "jane.doe@example.com")
+    modified_body, extra_headers = governed.body, governed.headers
     # 1. Client user label is preserved (sanitized) at root labels
     expect_equal(modified_body["labels"]["vscode-vertex-ai-user"], "my_team_nickname")
     # 2. Client project label is preserved (sanitized) at root labels
@@ -165,25 +164,16 @@ def test_validate_allowed_model() -> None:
             },
         },
     }
-    model_id, modified_body, extra_headers = validate_model_and_enforce_policy(
-        path,
-        body,
-        "jane.doe@example.com",
-    )
-    expect_equal(model_id, "gemini-3.8-flash")
-    expect_equal(modified_body["labels"]["vscode-vertex-ai-user"], "frontend-dev")
-    expect_equal(modified_body["labels"]["vscode-vertex-ai-project"], "crm-backend")
-    expect_equal(modified_body["labels"]["proxy-auth-user"], "jane_doe_example_com")
-    expect_in("X-Vertex-AI-Labels", extra_headers)
+    governed = enforce_request_policy(path, body, "jane.doe@example.com")
+    expect_equal(governed.model_id, "gemini-3.8-flash")
+    expect_equal(governed.body["labels"]["vscode-vertex-ai-user"], "frontend-dev")
+    expect_equal(governed.body["labels"]["vscode-vertex-ai-project"], "crm-backend")
+    expect_equal(governed.body["labels"]["proxy-auth-user"], "jane_doe_example_com")
+    expect_in("X-Vertex-AI-Labels", governed.headers)
 
-    # Also test high-thinking variant
-    path_high = _path("gemini-3.8-flash-high")
-    model_high, _, _ = validate_model_and_enforce_policy(
-        path_high,
-        body,
-        "jane.doe@example.com",
-    )
-    expect_equal(model_high, "gemini-3.8-flash-high")
+    # Effort is a native parameter on the same canonical model route.
+    body["generationConfig"] = {"thinkingConfig": {"thinkingLevel": "HIGH"}}
+    expect_equal(enforce_request_policy(path, body, "jane.doe@example.com").model_id, "gemini-3.8-flash")
 
     # Also test Claude Sonnet 5.5 and Opus 5.5 with header-based labels
     headers = {
@@ -191,50 +181,27 @@ def test_validate_allowed_model() -> None:
         "vscode-vertex-ai-user": "mobile-coder",
     }
     path_sonnet = _path(
-        "claude-sonnet-5-5-high",
+        "claude-sonnet-5-5",
         "streamRawPredict",
         publisher="anthropic",
     )
-    model_sonnet, _, headers_sonnet = validate_model_and_enforce_policy(
-        path_sonnet,
-        {},
-        "jane.doe@example.com",
-        headers=headers,
-    )
-    expect_equal(model_sonnet, "claude-sonnet-5-5-high")
+    governed_sonnet = enforce_request_policy(path_sonnet, {}, "jane.doe@example.com", headers=headers)
+    expect_equal(governed_sonnet.model_id, "claude-sonnet-5-5")
     decoded_sonnet = json.loads(
-        base64.b64decode(headers_sonnet["X-Vertex-AI-Labels"]).decode("utf-8"),
+        base64.b64decode(governed_sonnet.headers["X-Vertex-AI-Labels"]).decode("utf-8"),
     )
     expect_equal(decoded_sonnet["vscode-vertex-ai-project"], "mobile-app")
     expect_equal(decoded_sonnet["vscode-vertex-ai-user"], "mobile-coder")
     expect_equal(decoded_sonnet["proxy-auth-user"], "jane_doe_example_com")
 
-    # Anthropic's SDK sends the shared upstream version, not the catalog's
-    # policy-profile ID (for example, the selected "-medium" alias).
-    path_sonnet_upstream = _path(
-        "claude-sonnet-5-5",
-        "streamRawPredict",
-        publisher="anthropic",
-    )
+    # Omitted effort receives the same catalog default as the client.
     claude_body = {"messages": [{"role": "user", "content": "Hello"}]}
-    model_sonnet_upstream, modified_sonnet_body, _ = validate_model_and_enforce_policy(
-        path_sonnet_upstream,
-        claude_body,
-        "jane.doe@example.com",
-        headers=headers,
-    )
-    expect_equal(model_sonnet_upstream, "claude-sonnet-5-5")
-    expect_equal(modified_sonnet_body, {"messages": [{"role": "user", "content": "Hello"}]})
-    expect_not_in("labels", modified_sonnet_body)
+    governed_default = enforce_request_policy(path_sonnet, claude_body, "jane.doe@example.com", headers=headers)
+    expect_equal(governed_default.body, {"messages": [{"role": "user", "content": "Hello"}], "output_config": {"effort": "high"}})
+    expect_not_in("labels", governed_default.body)
 
     path_opus = _path("claude-opus-5-5", "streamRawPredict", publisher="anthropic")
-    model_opus, _, _ = validate_model_and_enforce_policy(
-        path_opus,
-        {},
-        "jane.doe@example.com",
-        headers=headers,
-    )
-    expect_equal(model_opus, "claude-opus-5-5")
+    expect_equal(enforce_request_policy(path_opus, {}, "jane.doe@example.com", headers=headers).model_id, "claude-opus-5-5")
 
 
 def test_validate_unauthorized_region() -> None:
@@ -248,20 +215,12 @@ def test_validate_unauthorized_region() -> None:
         },
     }
     with pytest.raises(GovernanceError) as excinfo:
-        validate_model_and_enforce_policy(
-            _path("gemini-3.8-flash", region="us-central1"),
-            body,
-            "user@example.com",
-        )
+        enforce_request_policy(_path("gemini-3.8-flash", region="us-central1"), body, "user@example.com")
     expect_equal(excinfo.value.status_code, 400)
     expect_in("us-central1", excinfo.value.message)
 
     with pytest.raises(GovernanceError):
-        validate_model_and_enforce_policy(
-            "/v1/models/gemini-3.8-flash:generateContent",
-            body,
-            "user@example.com",
-        )
+        enforce_request_policy("/v1/models/gemini-3.8-flash:generateContent", body, "user@example.com")
 
 
 def test_region_allowlist_is_configurable(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -272,12 +231,8 @@ def test_region_allowlist_is_configurable(monkeypatch: pytest.MonkeyPatch) -> No
             "labels": {"vscode-vertex-ai-project": "p", "vscode-vertex-ai-user": "u"},
         },
     }
-    model_id, _, _ = validate_model_and_enforce_policy(
-        _path("gemini-3.8-flash", region="europe-west1"),
-        body,
-        "user@example.com",
-    )
-    expect_equal(model_id, "gemini-3.8-flash")
+    governed = enforce_request_policy(_path("gemini-3.8-flash", region="europe-west1"), body, "user@example.com")
+    expect_equal(governed.model_id, "gemini-3.8-flash")
 
 
 def _project_path(project: str) -> str:
@@ -288,7 +243,7 @@ def test_project_outside_allowlist_is_rejected() -> None:
     """Verify a Vertex project that is not allowlisted is rejected."""
     body = {"labels": {"vscode-vertex-ai-project": "p", "vscode-vertex-ai-user": "u"}}
     with pytest.raises(GovernanceError) as excinfo:
-        validate_model_and_enforce_policy(_project_path("other-project"), body, "user@example.com")
+        enforce_request_policy(_project_path("other-project"), body, "user@example.com")
     expect_equal(excinfo.value.status_code, 400)
     expect_in("other-project", excinfo.value.message)
     expect_in("Approved projects", excinfo.value.message)
@@ -299,9 +254,9 @@ def test_vertex_projects_default_to_proxy_project(monkeypatch: pytest.MonkeyPatc
     monkeypatch.delenv("ALLOWED_VERTEX_PROJECTS")
     expect_equal(settings.allowed_vertex_projects, ["test-proxy-project"])
     body = {"labels": {"vscode-vertex-ai-project": "p", "vscode-vertex-ai-user": "u"}}
-    validate_model_and_enforce_policy(_project_path("test-proxy-project"), body, "user@example.com")
+    enforce_request_policy(_project_path("test-proxy-project"), body, "user@example.com")
     with pytest.raises(GovernanceError):
-        validate_model_and_enforce_policy(_project_path("user-project"), body, "user@example.com")
+        enforce_request_policy(_project_path("user-project"), body, "user@example.com")
 
 
 def test_vertex_projects_accept_comma_list_and_json_array(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -324,7 +279,7 @@ def test_validate_unauthorized_model() -> None:
         },
     }
     with pytest.raises(GovernanceError) as excinfo:
-        validate_model_and_enforce_policy(path, body, "user@example.com")
+        enforce_request_policy(path, body, "user@example.com")
     expect_equal(excinfo.value.status_code, 400)
     expect_in("allowlist", excinfo.value.message)
 
@@ -340,8 +295,11 @@ def test_extract_bearer_token() -> None:
         extract_bearer_token("Basic dXNlcjpwYXNz")
 
 
-def test_dynamic_env_var_override(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify dynamic env var override."""
+def test_dynamic_env_var_override(monkeypatch: pytest.MonkeyPatch, offline_proxy_policy: dict[str, Any]) -> None:
+    """An environment policy change enables only models with catalog metadata."""
+    custom = deepcopy(next(model for model in offline_proxy_policy["candidateModels"] if model["vendor"] == "google"))
+    custom.update(id="brand-new-custom-model", version="brand-new-custom-model")
+    offline_proxy_policy["candidateModels"].append(custom)
     monkeypatch.setenv("ALLOWED_MODELS", "brand-new-custom-model,gemini-3.7-flash")
 
     expect_in("brand-new-custom-model", settings.allowed_models)
@@ -356,15 +314,11 @@ def test_dynamic_env_var_override(monkeypatch: pytest.MonkeyPatch) -> None:
             },
         },
     }
-    model_id, modified_body, _extra_headers = validate_model_and_enforce_policy(
-        path,
-        body,
-        "john.smith@example.com",
-    )
-    expect_equal(model_id, "brand-new-custom-model")
-    expect_equal(modified_body["labels"]["vscode-vertex-ai-project"], "custom-corp-project")
-    expect_equal(modified_body["labels"]["vscode-vertex-ai-user"], "custom-user-tag")
-    expect_equal(modified_body["labels"]["proxy-auth-user"], "john_smith_example_com")
+    governed = enforce_request_policy(path, body, "john.smith@example.com")
+    expect_equal(governed.model_id, "brand-new-custom-model")
+    expect_equal(governed.body["labels"]["vscode-vertex-ai-project"], "custom-corp-project")
+    expect_equal(governed.body["labels"]["vscode-vertex-ai-user"], "custom-user-tag")
+    expect_equal(governed.body["labels"]["proxy-auth-user"], "john_smith_example_com")
 
 
 def test_billing_label_keys_remap_chat_labels(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -382,11 +336,8 @@ def test_billing_label_keys_remap_chat_labels(monkeypatch: pytest.MonkeyPatch) -
             },
         },
     }
-    _model_id, modified_body, extra_headers = validate_model_and_enforce_policy(
-        GEMINI_PATH,
-        body,
-        "jane.doe@example.com",
-    )
+    governed = enforce_request_policy(GEMINI_PATH, body, "jane.doe@example.com")
+    modified_body, extra_headers = governed.body, governed.headers
     expected = {
         "custom-repo-name": "ecommerce-frontend",
         "custom-developer-id": "custom_alias_",
@@ -409,11 +360,7 @@ def test_missing_label_error_names_the_chat_key(monkeypatch: pytest.MonkeyPatch)
     """Verify the rejection tells clients which label to send, not the billing name."""
     monkeypatch.setenv("BILLING_PROJECT_LABEL_KEY", "custom-repo-name")
     with pytest.raises(GovernanceError) as excinfo:
-        validate_model_and_enforce_policy(
-            GEMINI_PATH,
-            {"labels": {"vscode-vertex-ai-user": "u"}},
-            "jane.doe@example.com",
-        )
+        enforce_request_policy(GEMINI_PATH, {"labels": {"vscode-vertex-ai-user": "u"}}, "jane.doe@example.com")
     expect_in("vscode-vertex-ai-project", excinfo.value.message)
     expect_not_in("custom-repo-name", excinfo.value.message)
 
@@ -453,11 +400,7 @@ def test_optional_project_label_when_configured_false(monkeypatch: pytest.Monkey
     # User label present, project label omitted
     body = {"contents": [], "labels": {"vscode-vertex-ai-user": "test-dev"}}
     # Should not raise exception
-    _model_id, modified_body, _ = validate_model_and_enforce_policy(
-        path,
-        body,
-        "user@example.com",
-    )
+    modified_body = enforce_request_policy(path, body, "user@example.com").body
     expect_equal(modified_body["labels"]["vscode-vertex-ai-project"], "default")
     expect_equal(modified_body["labels"]["vscode-vertex-ai-user"], "test-dev")
 
@@ -471,11 +414,7 @@ def test_optional_user_label_when_configured_false(monkeypatch: pytest.MonkeyPat
     # Project label present, user label omitted
     body = {"contents": [], "labels": {"vscode-vertex-ai-project": "my-project"}}
     # Should not raise exception
-    _model_id, modified_body, _ = validate_model_and_enforce_policy(
-        path,
-        body,
-        "user@example.com",
-    )
+    modified_body = enforce_request_policy(path, body, "user@example.com").body
     expect_equal(modified_body["labels"]["vscode-vertex-ai-project"], "my-project")
     expect_equal(modified_body["labels"]["vscode-vertex-ai-user"], "default")
 
@@ -636,6 +575,7 @@ class TestFlaskHttp:
         flask_client: FlaskClient,
         monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str],
+        offline_proxy_policy: dict[str, Any],
     ) -> None:
         """Verify complete usage event is logged after stream completion."""
         monkeypatch.setenv("LOCAL_DEV_BYPASS", "true")
@@ -660,24 +600,10 @@ class TestFlaskHttp:
             return 200, {"Content-Type": "text/event-stream"}, gen()
 
         monkeypatch.setattr(inference_handler, "forward_to_vertex", mock_forward)
-        monkeypatch.setattr(
-            inference_handler,
-            "get_model_spec",
-            lambda _: {
-                "id": "gemini-3.8-flash",
-                "vendor": "google",
-                "family": "gemini",
-                "version": "3.8",
-                "maxInputTokens": 1000000,
-                "maxOutputTokens": 64000,
-                "pricing": {
-                    "input": 1.0,
-                    "output": 4.0,
-                    "cache_read": 0.1,
-                    "cache_create": 0.0,
-                },
-            },
-        )
+        model = next(model for model in offline_proxy_policy["candidateModels"] if model["id"] == "gemini-3.8-flash")
+        model["maxInputTokens"] = 1000000
+        model["maxOutputTokens"] = 64000
+        model["pricing"] = {"input": 1.0, "output": 4.0, "cache_read": 0.1, "cache_create": 0.0}
 
         sdk_path = "/v1/projects/test-proxy-project/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent"
         resp = flask_client.post(
@@ -743,7 +669,6 @@ class TestFlaskHttp:
     ) -> None:
         """Verify early failures emit one terminal summary."""
         monkeypatch.setenv("LOCAL_DEV_BYPASS", "true")
-        monkeypatch.setattr(inference_handler, "get_model_spec", lambda _: None)
 
         def fail(*_args: object, **_kwargs: object) -> Never:
             if case.failure == "auth":
@@ -754,7 +679,7 @@ class TestFlaskHttp:
 
         target = {
             "auth": "authenticate_caller",
-            "governance": "validate_model_and_enforce_policy",
+            "governance": "enforce_request_policy",
             "upstream": "forward_to_vertex",
         }[case.failure]
         monkeypatch.setattr(inference_handler, target, fail)
@@ -801,7 +726,6 @@ class TestFlaskHttp:
     ) -> None:
         """Verify stream outcomes are logged without bigquery."""
         monkeypatch.setenv("LOCAL_DEV_BYPASS", "true")
-        monkeypatch.setattr(inference_handler, "get_model_spec", lambda _: None)
 
         def forward(*_args: object, **_kwargs: object) -> UpstreamResult:
             def stream() -> Iterator[bytes]:
@@ -952,7 +876,7 @@ class TestFlaskHttp:
             expect_in("toolCalling", model["capabilities"])
             expect_in("input", model["pricing"])
             expect_in("output", model["pricing"])
-            expect_equal(model["maxInputTokens"], 250000)
+            expect_equal(model["maxInputTokens"], 1000)
 
     @pytest.mark.usefixtures("discovery_catalog")
     def test_discovery_sets_max_input_tokens_from_env(
@@ -966,7 +890,7 @@ class TestFlaskHttp:
         expect_equal(resp.status_code, 200)
         data = resp.get_json()
         for model in data["candidateModels"]:
-            expect_equal(model["maxInputTokens"], 250000)
+            expect_equal(model["maxInputTokens"], 1000)
 
     @pytest.mark.usefixtures("discovery_catalog")
     def test_discovery_preserves_catalog_max_input_tokens_when_disabled(
@@ -1105,10 +1029,10 @@ def test_build_vertex_url_sdk_routes() -> None:
     url_sdk = build_vertex_url(sdk_path)
     expect_equal(url_sdk, "https://aiplatform.googleapis.com/v1/projects/user-project/locations/global/publishers/google/models/gemini-3.8-flash:streamGenerateContent")
 
-    # 2. Suffix -high thinking alias is stripped for Vertex AI upstream endpoint
+    # 2. Literal endpoint names are preserved even when they end in -high.
     sdk_high = "/v1/projects/user-project/locations/global/publishers/google/models/gemini-3.8-flash-high:generateContent"
     url_high = build_vertex_url(sdk_high)
-    expect_equal(url_high, "https://aiplatform.googleapis.com/v1/projects/user-project/locations/global/publishers/google/models/gemini-3.8-flash:generateContent")
+    expect_equal(url_high, "https://aiplatform.googleapis.com/v1/projects/user-project/locations/global/publishers/google/models/gemini-3.8-flash-high:generateContent")
 
     # 3. Regional endpoint
     sdk_regional = "/v1/projects/user-project/locations/europe-west1/publishers/anthropic/models/claude-sonnet-5.5:rawPredict"
@@ -1120,48 +1044,16 @@ def test_build_vertex_url_sdk_routes() -> None:
     ("allowed", "expected"),
     [
         ("gemini-3-flash-preview", ["gemini-3-flash-preview"]),
-        (
-            "gemini-3-flash-preview,gemini-3-flash-preview-high",
-            ["gemini-3-flash-preview", "gemini-3-flash-preview-high"],
-        ),
+        ("gemini-3-flash-preview,gemini-3-flash-preview-high", ["gemini-3-flash-preview"]),
         ("gemini-3-flash", []),
-        ("gemini-3.flash-preview", ["gemini-3.flash-preview"]),
+        ("gemini-3.flash-preview", []),
     ],
 )
-def test_discovery_requires_explicit_variants(monkeypatch: pytest.MonkeyPatch, allowed: str, expected: list[str]) -> None:
-    """Verify discovery requires explicit variants."""
-    catalog = {
-        "candidateModels": [
-            {"id": "gemini-3-flash-preview", "version": "gemini-3-flash-preview"},
-            {
-                "id": "gemini-3-flash-preview-high",
-                "version": "gemini-3-flash-preview-high",
-            },
-        ],
-    }
-    monkeypatch.setattr(discovery, "load_master_catalog", lambda: catalog)
+def test_discovery_matches_literal_policy_ids(monkeypatch: pytest.MonkeyPatch, allowed: str, expected: list[str]) -> None:
+    """Model-name normalization and effort suffixes cannot widen catalog policy."""
     monkeypatch.setenv("ALLOWED_MODELS", allowed)
     models = discovery.get_discovery_catalog()["candidateModels"]
     expect_equal([model["id"] for model in models], expected)
-    expect_equal(catalog["candidateModels"][0]["id"], "gemini-3-flash-preview")
-
-
-@pytest.mark.parametrize(
-    ("model", "allowed", "expected"),
-    [
-        ("gemini-3-flash-preview-high", ["gemini-3-flash-preview"], False),
-        ("gemini-3-flash-preview-next", ["gemini-3-flash-preview"], False),
-        ("gemini-3-flash-preview", ["gemini-3-flash-preview"], True),
-        ("gemini-3-flash-preview-high", ["gemini-3-flash-preview-high"], True),
-        ("claude-sonnet-5-5", ["claude-sonnet-5-5-medium"], True),
-        ("claude-sonnet-5-5-high", ["claude-sonnet-5-5-medium"], False),
-        ("claude-sonnet-5-6", ["claude-sonnet-5-5-medium"], False),
-        ("gemini-3.8-flash", ["gemini-3-8-flash"], True),
-    ],
-)
-def test_model_allowlist_requires_explicit_variants(model: str, allowed: list[str], expected: bool) -> None:
-    """Verify model allowlist requires explicit variants."""
-    expect_is(_is_model_allowed(model, allowed), expected)
 
 
 # ---------------------------------------------------------------------------

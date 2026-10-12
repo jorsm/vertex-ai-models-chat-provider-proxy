@@ -206,8 +206,8 @@ class TestLiveInferenceAllowedModels:
         expect_greater(len(candidate_text.strip()), 0)
 
     def test_gemini_3_8_flash_high_live_inference(self, proxy_url: str, valid_headers: dict, vertex_project: str) -> None:
-        """Executes a real live inference request to gemini-3.8-flash-high via the proxy."""
-        url = f"{proxy_url}/v1/projects/{vertex_project}/locations/global/publishers/google/models/gemini-3.8-flash-high:generateContent"
+        """Executes a real live inference request with native HIGH effort to gemini-3.8-flash via the proxy."""
+        url = f"{proxy_url}/v1/projects/{vertex_project}/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
         body = {
             "contents": [
                 {
@@ -215,6 +215,7 @@ class TestLiveInferenceAllowedModels:
                     "parts": [{"text": "Qual e la capitale dell'Italia? Rispondi in una parola."}],
                 },
             ],
+            "generationConfig": {"thinkingConfig": {"thinkingLevel": "HIGH"}},
             "labels": {
                 "vscode-vertex-ai-project": "automated-integration-suite",
                 "vscode-vertex-ai-user": "qa-automation-runner",

@@ -17,6 +17,7 @@ def test_complete_event_preserves_precise_costs_and_variable_metadata(capsys: py
     event = {
         "event_id": "event-123",
         "schema_version": 4,
+        "model_effort": "medium",
         "http_status": 200,
         "outcome": "completed",
         "duration_ms": 10.0,
@@ -32,6 +33,7 @@ def test_complete_event_preserves_precise_costs_and_variable_metadata(capsys: py
     log_inference_summary(event, None)
     entry = json.loads(capsys.readouterr().out)
     expect_equal(entry["estimated_total_cost_decimal"], event["estimated_total_cost"])
+    expect_equal(entry["model_effort"], "medium")
     expect_equal(entry["principal_subject"], event["principal_subject"])
     expect_equal(entry["principal_display_name"], event["principal_display_name"])
     for key in ("effective_labels", "model_metadata", "provider_usage"):

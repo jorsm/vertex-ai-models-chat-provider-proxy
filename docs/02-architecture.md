@@ -58,7 +58,7 @@ sequenceDiagram
     Run->>Run: Verify token signature and roles/run.invoker
     Run->>Proxy: Forward request
     Proxy->>Proxy: authentication: read the verified claims (email, sub, name)
-    Proxy->>Proxy: governance: model allowlist, region allowlist, required labels
+    Proxy->>Proxy: governance: catalog model/publisher, project/region allowlists, labels, effort
     alt Rejected
         Proxy-->>Dev: HTTP 400 / 401 / 403 with a structured error
     else Accepted

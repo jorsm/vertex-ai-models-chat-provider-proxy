@@ -52,7 +52,20 @@ variable "custom_domain" {
 
 variable "allowed_models" {
   type        = list(string)
-  description = "List of enterprise-approved AI models allowed through the proxy"
+  description = "Exact canonical model catalog IDs approved through the proxy; effort is configured in the request, never in the model ID"
+  nullable    = false
+
+  validation {
+    condition = length(var.allowed_models) > 0 && length(distinct(var.allowed_models)) == length(var.allowed_models) && alltrue([
+      for model in var.allowed_models :
+      try(
+        can(regex("^[a-zA-Z0-9_.@-]+$", model)) &&
+        !can(regex("^(claude|gemini)-.*-(minimal|low|medium|high|xhigh|max)$", model)),
+        false
+      )
+    ])
+    error_message = "Use a non-empty list of unique canonical model catalog IDs containing only letters, digits, underscores, dots, @ or hyphens. Obsolete Claude/Gemini effort aliases ending in -minimal, -low, -medium, -high, -xhigh or -max are not supported."
+  }
 }
 
 variable "allowed_vertex_regions" {

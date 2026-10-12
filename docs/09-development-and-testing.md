@@ -52,6 +52,7 @@ pytest tests            # unit tests; live tests are skipped without configurati
 | File | Scope |
 | --- | --- |
 | `test_unit_proxy.py` | Governance, label sanitization, settings, discovery, URL building and the Flask routes with a mocked upstream |
+| `test_effort_contract.py` | Offline canonical discovery, every fixture effort/default, literal publisher/version routing, rejection before upstream, cache validation, signed history preservation and `model_effort` logging |
 | `test_usage_tracking.py` | Streaming usage parsing for Gemini and Claude, cost estimation |
 | `test_observability.py` | Schema of the emitted usage event |
 | `test_tracing.py` | Span lifetimes across streams, absence of sensitive data, trace correlation, exporter failure handling |
@@ -59,6 +60,8 @@ pytest tests            # unit tests; live tests are skipped without configurati
 | `test_integration_proxy.py` | Live end-to-end tests against a deployed proxy |
 
 Assertions use the helpers in `tests/checks.py` (`expect`, `expect_equal`, `expect_in`, ...), which raise `AssertionError` with a descriptive message.
+
+Effort regression tests use the committed catalog fixture under `api/tests/fixtures/`, without downloading the live catalog or making paid inference calls. Run `terraform -chdir=terraform test -var-file=terraform.tfvars.example` for mocked infrastructure checks of the canonical allowlist, Cloud Run settings and usage schema/view.
 
 ## Live integration tests
 
@@ -83,7 +86,7 @@ The identity must hold `roles/run.invoker`. The tests assume the sample governan
 | `TestHealthAndAuth` | `/health`, `/openapi.json`, `/discovery`, disabled legacy paths, unknown paths (404), missing or forged token (401/403) |
 | `TestLabelGovernanceConstraints` | Missing project label, missing user label, empty labels (400) |
 | `TestModelGovernanceConstraints` | Model outside the allowlist (400) |
-| `TestLiveInferenceAllowedModels` | Real Gemini inference (plain and high-effort), Claude-style labels header, SDK-shaped path |
+| `TestLiveInferenceAllowedModels` | Real Gemini inference (default and explicit `thinkingLevel: "HIGH"` on the same canonical model), Claude-style labels header, SDK-shaped path |
 
 ## Contributing guidelines
 

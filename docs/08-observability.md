@@ -25,7 +25,7 @@ Fields are scalars directly queryable under `jsonPayload`. Only variable-shaped 
 | --- | --- |
 | Event and correlation | `event_id`, `request_id`, `trace_id`, `provider_response_id`, `schema_version` (4), `request_started_at`, `response_completed_at` |
 | Identity and workspace | `principal_email`, `principal_subject`, `principal_display_name`, `client_user_label`, `workspace_label` |
-| Provider and model | `provider`, `model_requested`, `model_upstream`, `model_family`, `model_version`, `vertex_region`, `endpoint_action`, `max_input_tokens`, `max_output_tokens` |
+| Provider and model | `provider`, `model_requested`, `model_upstream`, `model_effort`, `model_family`, `model_version`, `vertex_region`, `endpoint_action`, `max_input_tokens`, `max_output_tokens` |
 | Timing | `duration_ms`, `time_to_first_chunk_ms`, `time_to_first_token_ms` |
 | Outcome | `http_status`, `outcome`, `stream_completed`, `usage_complete` |
 | Tokens | `input_tokens_total`, `input_tokens_uncached`, `output_tokens`, `cache_read_tokens`, `cache_write_tokens` (and `_5m`/`_1h`), `thinking_tokens`, `tool_use_tokens`, `billable_output_tokens`, `total_tokens` |
@@ -38,6 +38,7 @@ Fields are scalars directly queryable under `jsonPayload`. Only variable-shaped 
 Notes on semantics:
 
 - **Missing values are omitted** (BigQuery `NULL`); zero is kept.
+- `model_effort` is the effective top-level named effort after validation and default injection, normalized to lowercase. It is a bounded scalar from the model's declared choices and is nullable for requests without an applicable validated effort (including explicit `countTokens`). The normalized view exposes it under `model.model_effort`; message-level overrides stay in the request and are not logged individually.
 - `estimated_*_cost` are floating-point numbers for metrics. The matching `estimated_*_cost_decimal` fields hold the exact decimal string; prices (`*_price_per_million`) are decimal strings too. Use `SAFE_CAST(... AS NUMERIC)` for accounting queries.
 - Costs are **estimates** computed from the catalog pricing and the provider's reported usage. They are not invoiced amounts: reconcile with Cloud Billing.
 - `principal_display_name` is the `name` claim of the verified token and may be absent.
@@ -50,7 +51,7 @@ Upstream HTTP errors (4xx/5xx) additionally produce a separate log with `event_k
 
 A Cloud Logging sink exports the proxy's stdout events that carry an `event_id` into a day-partitioned table, `run_googleapis_com_stdout`, in the usage dataset. The raw table keeps application fields under `jsonPayload` (timestamps are ISO strings).
 
-The view **`ai_usage_events_normalized`** presents the same data grouped into nine STRUCTs: `event`, `identity`, `model`, `timing`, `result`, `tokens`, `pricing`, `costs`, `versions`, plus `logged_at`. It only projects, builds STRUCTs and applies `SAFE_CAST` (costs and prices to `NUMERIC`, counts to `INT64`, application timestamps to `TIMESTAMP`, latencies to `FLOAT64`). It does not parse JSON, join, or deduplicate.
+The view **`ai_usage_events_normalized`** presents the same data grouped into nine STRUCTs: `event`, `identity`, `model`, `timing`, `result`, `tokens`, `pricing`, `costs`, `versions`, plus `logged_at`. It projects, builds STRUCTs and applies `SAFE_CAST` (costs and prices to `NUMERIC`, counts to `INT64`, application timestamps to `TIMESTAMP`, latencies to `FLOAT64`). Optional `model_effort` uses JSON extraction to tolerate older raw schemas. The view does not join or deduplicate.
 
 Export is asynchronous and at-least-once, so the table can contain duplicates: deduplicate on `event_id` when accuracy matters, and always filter by time to limit the partitions scanned. Events logged before the sink existed are not back-filled.
 

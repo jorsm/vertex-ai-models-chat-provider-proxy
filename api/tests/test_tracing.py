@@ -22,7 +22,7 @@ from opentelemetry.trace import NonRecordingSpan, SpanContext, StatusCode, Trace
 import main
 from inference import handler as inference_handler
 from security.auth import AuthError
-from security.governance import GovernanceError
+from security.governance import GovernanceError, GovernedRequest
 from telemetry import tracing
 from telemetry.logger import log_event
 from telemetry.tracing import WarningCloudTraceSpanExporter
@@ -91,10 +91,9 @@ def trace_client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TraceClient]:
     )
     monkeypatch.setattr(
         inference_handler,
-        "validate_model_and_enforce_policy",
-        lambda *_args, **_kwargs: ("gemini-test", {}, {}),
+        "enforce_request_policy",
+        lambda *_args, **_kwargs: GovernedRequest(model_id="gemini-test", body={}, headers={}, model_spec={"id": "gemini-test", "version": "gemini-test", "vendor": "google"}),
     )
-    monkeypatch.setattr(inference_handler, "get_model_spec", lambda _: None)
     monkeypatch.setattr(
         vertex_client,
         "get_vertex_access_token",
@@ -157,7 +156,7 @@ def test_display_name_in_usage_comes_from_authenticated_claims(
 
         monkeypatch.setattr(
             inference_handler,
-            "validate_model_and_enforce_policy",
+            "enforce_request_policy",
             reject,
         )
     response = client.post(PATH, json={"name": "Forged client name"}, buffered=True)

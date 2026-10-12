@@ -90,6 +90,11 @@
         "mode": "NULLABLE"
       },
       {
+        "name": "model_effort",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
         "name": "model_family",
         "type": "STRING",
         "mode": "NULLABLE"

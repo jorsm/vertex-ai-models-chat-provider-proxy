@@ -26,6 +26,7 @@ SCALAR_FIELDS = (
     "provider",
     "model_requested",
     "model_upstream",
+    "model_effort",
     "vertex_region",
     "model_family",
     "model_version",
