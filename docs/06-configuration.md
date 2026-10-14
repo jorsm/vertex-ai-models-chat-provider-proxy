@@ -2,6 +2,7 @@
 
 - [Proxy environment variables](#proxy-environment-variables)
 - [Terraform variables](#terraform-variables)
+  - [Model allowlist](#model-allowlist)
   - [Environment and project](#environment-and-project)
   - [Governance](#governance)
   - [Usage analytics, budgets and alerts](#usage-analytics-budgets-and-alerts)
@@ -43,6 +44,16 @@ Variables marked *required* have no default: the service refuses to use a missin
 | `K_REVISION` | no | Provided by Cloud Run; logged as `service_version` | Cloud Run |
 
 ## Terraform variables
+
+### Model allowlist
+
+`allowed_models` becomes the Cloud Run `ALLOWED_MODELS` environment variable. The proxy downloads `models_catalog_url` and caches valid catalogs in memory for five minutes, retaining the last valid catalog if a refresh fails. `/discovery` returns the intersection of the allowlist and catalog `id` values, in allowlist order. Missing IDs are omitted; wildcards, effort suffixes, and model-name normalization are not supported.
+
+Inference uses that same approved subset: the request route must match an allowed entry's exact `version` and `vendor` (Google or Anthropic). A client cannot bypass the subset by calling a hidden model directly; the proxy returns `400` before token counting or forwarding. Project, region, label and request-size policies are checked independently.
+
+Thinking effort comes from each allowed model's catalog metadata. For example, `gemini-4-argon` permits Low/Medium/High, defaults to Medium when omitted, and rejects unsupported levels. `allowed_models` selects models; it does not restrict their individual effort choices. Discovery also caps advertised input tokens using `discovery_max_input_tokens`.
+
+Update the actual `terraform.tfvars` and apply the reviewed plan to change the deployed subset; editing the example or the upstream catalog alone does not enable a model.
 
 ### Environment and project
 

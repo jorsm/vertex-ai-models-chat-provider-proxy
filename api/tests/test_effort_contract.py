@@ -116,6 +116,28 @@ def _never_upstream(*_args: object, **_kwargs: object) -> Never:
     pytest.fail("Rejected policy input reached token counting or Vertex inference")
 
 
+@pytest.mark.parametrize("allowed", ["gemini-4-argon", "gemini-3.8-flash", "gemini-4-argon-high", "gemini-4.argon"])
+def test_argon_requires_exact_allowlist_membership(monkeypatch: pytest.MonkeyPatch, allowed: str) -> None:
+    """Argon appears and accepts requests only with its exact canonical ID approved."""
+    monkeypatch.setenv("ALLOWED_MODELS", allowed)
+    model = next(model for model in EFFORT_MODELS if model["id"] == "gemini-4-argon")
+    response = app.test_client().get("/discovery")
+    expect_equal(response.status_code, 200)
+    ids = [entry["id"] for entry in response.json["candidateModels"]]
+    if allowed == model["id"]:
+        expect_equal(ids, [model["id"]])
+        governed = enforce_request_policy(route(model), request_body(model), "verified@example.invalid", HEADERS)
+        expect_equal(governed.model_id, model["version"])
+        expect_equal(governed.body["generationConfig"]["thinkingConfig"]["thinkingLevel"], "MEDIUM")
+    else:
+        expect_not_in(model["id"], ids)
+        monkeypatch.setenv("LOCAL_DEV_BYPASS", "true")
+        monkeypatch.setattr(handler, "forward_to_vertex", _never_upstream)
+        monkeypatch.setattr(handler, "count_tokens_vertex", _never_upstream)
+        response = app.test_client().post(route(model), json=request_body(model), headers=HEADERS)
+        expect_equal(response.status_code, 400)
+
+
 @pytest.mark.parametrize("vendor", ["google", "anthropic"])
 @pytest.mark.parametrize("value", ["ultra", " high ", "", None, 3, True, {}, [], {"private": "must-not-log"}])
 def test_rejected_effort_never_reaches_upstream(monkeypatch: pytest.MonkeyPatch, vendor: str, value: object) -> None:

@@ -115,23 +115,26 @@ On Google Cloud outside Cloud Run you must provide runtime credentials with Vert
 
 Canonical model authorization and native effort validation require both the new proxy code and a matching `allowed_models` configuration. Updating only one can leave discovery incomplete or effort unenforced. Local tests and mocked Terraform plans do not change the deployed service.
 
-The intended five-model policy is:
+The intended six-model policy is:
 
 ```hcl
 allowed_models = [
   "claude-opus-5-5",
   "claude-sonnet-5-5",
   "claude-haiku-5-5",
+  "gemini-4-argon",
   "gemini-3.8-flash",
   "gemini-3-flash-preview", # Commit-message model
 ]
 ```
 
+Gemini 4 Argon uses the exact ID `gemini-4-argon`; its catalog declares Low/Medium/High thinking effort with Medium as the default. Adding the ID to `allowed_models` takes effect on the deployed proxy after applying the reviewed Terraform plan. The existing proxy code handles it through the Google adapter; a new API image is not required solely to extend this allowlist.
+
 Keep `models_catalog_url` pointing to the configured `main/src/models.json` catalog. Preserve the existing Vertex project allowlist and independent chat/billing label keys.
 
 For an authorized rollout, review the real Terraform plan first, then deploy the proxy with `api/deploy.sh` or `api/deploy.ps1` and apply the canonical configuration in the same rollout window. Until both steps finish, legacy alias entries can disappear from discovery. The bootstrap raw-table schema includes nullable `model_effort`; existing tables keep their Logging-managed schema and receive the field when new events arrive. The updated normalized view also works before that addition, and older events remain null.
 
-Verify `/discovery` exposes the five canonical IDs with their advertised effort policies using an ordinary authenticated request. Confirm explicit and omitted/default effort requests succeed on the same backend version, invalid effort and legacy aliases return `400`, and usage events record the validated top-level `model_effort`. Use the [live integration tests](09-development-and-testing.md#live-integration-tests) and [analytics checks](08-observability.md#verification) after deployment.
+Verify `/discovery` exposes the six canonical IDs with their advertised effort policies using an ordinary authenticated request. Confirm explicit and omitted/default effort requests succeed on the same backend version, invalid effort and legacy aliases return `400`, and usage events record the validated top-level `model_effort`. Use the [live integration tests](09-development-and-testing.md#live-integration-tests) and [analytics checks](08-observability.md#verification) after deployment.
 
 For rollback, restore the previous API image and model allowlist together, then restore the previous reporting view if required. Keep the nullable raw effort field; removing historical schema additions is unnecessary.
 

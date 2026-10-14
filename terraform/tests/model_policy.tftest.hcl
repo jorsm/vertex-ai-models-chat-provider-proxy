@@ -17,6 +17,7 @@ run "canonical_models_and_runtime_contract" {
       "claude-opus-5-5",
       "claude-sonnet-5-5",
       "claude-haiku-5-5",
+      "gemini-4-argon",
       "gemini-3.8-flash",
       "gemini-3-flash-preview",
     ]
@@ -27,8 +28,8 @@ run "canonical_models_and_runtime_contract" {
     condition = one([
       for env in google_cloud_run_v2_service.copilot_chat_proxy.template[0].containers[0].env : env.value
       if env.name == "ALLOWED_MODELS"
-    ]) == "claude-opus-5-5,claude-sonnet-5-5,claude-haiku-5-5,gemini-3.8-flash,gemini-3-flash-preview"
-    error_message = "Cloud Run must receive exact canonical IDs, including the dot in Gemini 3.8 and the commit-message model."
+    ]) == "claude-opus-5-5,claude-sonnet-5-5,claude-haiku-5-5,gemini-4-argon,gemini-3.8-flash,gemini-3-flash-preview"
+    error_message = "Cloud Run must receive exact canonical IDs, including Gemini 4 Argon, the dot in Gemini 3.8 and the commit-message model."
   }
 
   assert {
