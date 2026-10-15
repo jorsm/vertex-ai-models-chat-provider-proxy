@@ -112,22 +112,26 @@ def load_master_catalog() -> dict[str, Any]:
     return {"candidateModels": [], "regionPriority": settings.allowed_regions}
 
 
-def get_allowed_model_specs(catalog: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+def get_allowed_model_specs(
+    catalog: dict[str, Any] | None = None,
+    user_email: str | None = None,
+) -> list[dict[str, Any]]:
     """Select exact catalog IDs in policy order without authorizing aliases."""
     source = catalog if catalog is not None else load_master_catalog()
     candidates = {model["id"]: model for model in source["candidateModels"]}
-    return [deepcopy(candidates[model_id]) for model_id in dict.fromkeys(settings.allowed_models) if model_id in candidates]
+    allowed_models = settings.allowed_models_for_user(user_email)
+    return [deepcopy(candidates[model_id]) for model_id in dict.fromkeys(allowed_models) if model_id in candidates]
 
 
-def get_discovery_catalog() -> dict[str, Any]:
+def get_discovery_catalog(user_email: str | None = None) -> dict[str, Any]:
     """Return the discovery response matching schemas/models.schema.json.
 
-    - candidateModels: only models allowed by enterprise policy (settings.allowed_models)
+    - candidateModels: only models allowed by enterprise policy (or user override)
     - regionPriority: settings.allowed_regions (e.g. ["global"]).
     """
     catalog = load_master_catalog()
     override_max_input = settings.discovery_max_input_tokens
-    matched_models = get_allowed_model_specs(catalog)
+    matched_models = get_allowed_model_specs(catalog, user_email=user_email)
     for model_entry in matched_models:
         if override_max_input > 0:
             model_entry["maxInputTokens"] = min(override_max_input, model_entry["maxInputTokens"])

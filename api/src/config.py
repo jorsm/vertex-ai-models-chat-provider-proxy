@@ -36,6 +36,31 @@ def _parse_required_list(env_name: str) -> list[str]:
     return result
 
 
+def _parse_models_users_override(env_name: str) -> dict[str, list[str]]:
+    """Parse an optional JSON object mapping user emails to non-empty model ID lists."""
+    raw_val = os.getenv(env_name, "").strip()
+    if not raw_val:
+        return {}
+    try:
+        parsed = json.loads(raw_val)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Error parsing JSON object for '{env_name}': {exc}") from exc
+    if isinstance(parsed, dict):
+        overrides: dict[str, list[str]] = {}
+        for raw_email, raw_models in parsed.items():
+            email = str(raw_email).strip().lower()
+            models: list[str] = []
+            if isinstance(raw_models, list):
+                models = [str(item).strip() for item in raw_models if item is not None and str(item).strip()]
+            elif isinstance(raw_models, str):
+                models = [item.strip() for item in raw_models.split(",") if item.strip()]
+            if not email or not models:
+                raise RuntimeError(f"Invalid configuration: '{env_name}' must map non-empty user emails to non-empty model lists.")
+            overrides[email] = models
+        return overrides
+    raise RuntimeError(f"Invalid configuration: '{env_name}' must be a JSON object mapping user emails to model lists.")
+
+
 def _parse_required_bool(env_name: str) -> bool:
     """Parse a required boolean from an environment variable ('true'/'false')."""
     raw_val = _get_required_env(env_name).lower()
@@ -108,6 +133,20 @@ class Settings:
     def allowed_models(self) -> list[str]:
         """Model IDs allowed by governance, from `ALLOWED_MODELS`."""
         return _parse_required_list("ALLOWED_MODELS")
+
+    @property
+    def allowed_models_users_override(self) -> dict[str, list[str]]:
+        """Per-user model allowlist overrides keyed by lowercase email, from optional `ALLOWED_MODELS_USERS_OVERRIDE`."""
+        return _parse_models_users_override("ALLOWED_MODELS_USERS_OVERRIDE")
+
+    def allowed_models_for_user(self, user_email: str | None = None) -> list[str]:
+        """Return the model allowlist applicable to `user_email`, falling back to `allowed_models`."""
+        if user_email:
+            normalized = user_email.strip().lower()
+            overrides = self.allowed_models_users_override
+            if normalized in overrides:
+                return overrides[normalized]
+        return self.allowed_models
 
     @property
     def models_catalog_url(self) -> str:

@@ -87,6 +87,10 @@ allowed_models = [
   "gemini-3-flash-preview", # Commit messages
 ]
 
+# Optional per-user model allowlist overrides mapped by caller email (replaces allowed_models for those users).
+# Example: { "developer@example.com" = ["claude-sonnet-5-5", "gemini-3.8-flash"] }
+allowed_models_users_override = {}
+
 # Vertex AI projects that clients may target (the client names the project in each request).
 # An empty list allows only the proxy project.
 # Terraform does not manage IAM on other projects: remember to grant roles/aiplatform.user to the proxy

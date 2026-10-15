@@ -21,6 +21,9 @@ run "canonical_models_and_runtime_contract" {
       "gemini-3.8-flash",
       "gemini-3-flash-preview",
     ]
+    allowed_models_users_override = {
+      "developer@example.com" = ["claude-sonnet-5-5", "gemini-3.8-flash"]
+    }
     allowed_vertex_projects = ["vertex-target-project"]
   }
 
@@ -30,6 +33,16 @@ run "canonical_models_and_runtime_contract" {
       if env.name == "ALLOWED_MODELS"
     ]) == "claude-opus-5-5,claude-sonnet-5-5,claude-haiku-5-5,gemini-4-argon,gemini-3.8-flash,gemini-3-flash-preview"
     error_message = "Cloud Run must receive exact canonical IDs, including Gemini 4 Argon, the dot in Gemini 3.8 and the commit-message model."
+  }
+
+  assert {
+    condition = jsondecode(one([
+      for env in google_cloud_run_v2_service.copilot_chat_proxy.template[0].containers[0].env : env.value
+      if env.name == "ALLOWED_MODELS_USERS_OVERRIDE"
+    ])) == {
+      "developer@example.com" = ["claude-sonnet-5-5", "gemini-3.8-flash"]
+    }
+    error_message = "Cloud Run must receive the JSON-encoded per-user model override map."
   }
 
   assert {
@@ -136,3 +149,14 @@ run "reject_comma_in_model_id" {
   }
   expect_failures = [var.allowed_models]
 }
+
+run "reject_invalid_user_override" {
+  command = plan
+  variables {
+    allowed_models_users_override = {
+      "developer@example.com" = ["claude-sonnet-5-5-medium"]
+    }
+  }
+  expect_failures = [var.allowed_models_users_override]
+}
+

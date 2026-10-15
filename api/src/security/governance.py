@@ -207,11 +207,19 @@ def enforce_request_policy(
         raise GovernanceError(HTTPStatus.BAD_REQUEST, "Unsupported Vertex model route.")
     model_id = route["version"]
     publisher = route["publisher"]
-    model_spec = next((model for model in get_allowed_model_specs() if model["version"] == model_id and model["vendor"] == publisher and publisher in ("google", "anthropic")), None)
+    allowed_models = settings.allowed_models_for_user(user_email)
+    model_spec = next(
+        (
+            model
+            for model in get_allowed_model_specs(user_email=user_email)
+            if model["version"] == model_id and model["vendor"] == publisher and publisher in ("google", "anthropic")
+        ),
+        None,
+    )
     if model_spec is None:
         raise GovernanceError(
             HTTPStatus.BAD_REQUEST,
-            f"Model '{model_id}' is not in the approved allowlist. Approved models: {settings.allowed_models}",
+            f"Model '{model_id}' is not in the approved allowlist. Approved models: {allowed_models}",
         )
 
     # Project and region are chosen by the client; the allowlists bound the choice

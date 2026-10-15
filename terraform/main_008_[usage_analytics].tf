@@ -70,7 +70,7 @@ resource "google_bigquery_table" "ai_usage_events_normalized" {
   dataset_id    = google_bigquery_dataset.ai_usage.dataset_id
   table_id      = "ai_usage_events_normalized"
   friendly_name = "AI usage report"
-  description   = "Usage fields grouped into context STRUCTs with type casts; no JSON parsing or deduplication"
+  description   = "Usage fields grouped into context STRUCTs with type casts and optional model effort; no deduplication"
 
   view {
     use_legacy_sql = false

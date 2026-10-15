@@ -321,6 +321,58 @@ def test_dynamic_env_var_override(monkeypatch: pytest.MonkeyPatch, offline_proxy
     expect_equal(governed.body["labels"]["proxy-auth-user"], "john_smith_example_com")
 
 
+def test_allowed_models_users_override_discovery_and_governance(
+    monkeypatch: pytest.MonkeyPatch,
+    flask_client: FlaskClient,
+) -> None:
+    """Per-user override replaces the default allowlist in both discovery and inference governance."""
+    monkeypatch.setenv("ALLOWED_MODELS", "gemini-3.8-flash")
+    monkeypatch.setenv(
+        "ALLOWED_MODELS_USERS_OVERRIDE",
+        json.dumps({"VIP.User@example.com": ["claude-opus-5-5", "gemini-3.8-flash"], "restricted@example.com": ["gemini-3-flash-preview"]}),
+    )
+
+    expect_equal(settings.allowed_models_for_user("vip.user@example.com"), ["claude-opus-5-5", "gemini-3.8-flash"])
+    expect_equal(settings.allowed_models_for_user("other@example.com"), ["gemini-3.8-flash"])
+
+    vip_discovery = discovery.get_discovery_catalog(user_email="vip.user@example.com")
+    expect_equal([m["id"] for m in vip_discovery["candidateModels"]], ["claude-opus-5-5", "gemini-3.8-flash"])
+
+    default_discovery = discovery.get_discovery_catalog(user_email="other@example.com")
+    expect_equal([m["id"] for m in default_discovery["candidateModels"]], ["gemini-3.8-flash"])
+
+    # Restricted user cannot call gemini-3.8-flash even though it is in the global ALLOWED_MODELS
+    body = {"contents": [], "labels": {"vscode-vertex-ai-project": "p", "vscode-vertex-ai-user": "u"}}
+    with pytest.raises(GovernanceError) as excinfo:
+        enforce_request_policy(GEMINI_PATH, body, "restricted@example.com")
+    expect_in("gemini-3-flash-preview", excinfo.value.message)
+
+    # Restricted user CAN call gemini-3-flash-preview
+    governed = enforce_request_policy(_path("gemini-3-flash-preview"), deepcopy(body), "restricted@example.com")
+    expect_equal(governed.model_id, "gemini-3-flash-preview")
+
+    # HTTP /discovery uses the authenticated user's override
+    monkeypatch.setenv("LOCAL_DEV_BYPASS", "true")
+    monkeypatch.setenv(
+        "ALLOWED_MODELS_USERS_OVERRIDE",
+        json.dumps({"local-developer@example.com": ["gemini-3-flash-preview"]}),
+    )
+    resp = flask_client.get("/discovery")
+    expect_equal(resp.status_code, 200)
+    expect_equal([m["id"] for m in resp.get_json()["candidateModels"]], ["gemini-3-flash-preview"])
+
+
+def test_allowed_models_users_override_rejects_invalid_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Invalid JSON or empty model lists in ALLOWED_MODELS_USERS_OVERRIDE raise RuntimeError."""
+    monkeypatch.setenv("ALLOWED_MODELS_USERS_OVERRIDE", "not-json")
+    with pytest.raises(RuntimeError):
+        _ = settings.allowed_models_users_override
+
+    monkeypatch.setenv("ALLOWED_MODELS_USERS_OVERRIDE", json.dumps({"user@example.com": []}))
+    with pytest.raises(RuntimeError):
+        _ = settings.allowed_models_users_override
+
+
 def test_billing_label_keys_remap_chat_labels(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verify labels are read under the chat keys and written under the billing keys only."""
     monkeypatch.setenv("BILLING_USER_LABEL_KEY", "custom-developer-id")
@@ -905,6 +957,29 @@ class TestFlaskHttp:
         data = resp.get_json()
         for model in data["candidateModels"]:
             expect_equal(model["maxInputTokens"], 1000)
+
+    @pytest.mark.usefixtures("discovery_catalog")
+    def test_discovery_logs_authenticated_user(
+        self,
+        flask_client: FlaskClient,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Verify /discovery logs the authenticated user email when available."""
+        monkeypatch.setattr(
+            "web.endpoint_handlers.authenticate_caller",
+            lambda _header: ("jane.doe@example.com", {"email": "jane.doe@example.com", "name": "Jane Doe"}),
+        )
+        resp = flask_client.get("/discovery", headers={"Authorization": "Bearer valid-token"})
+        expect_equal(resp.status_code, 200)
+        logs = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.startswith("{")]
+        discovery_logs = [entry for entry in logs if entry.get("http_path") == "/discovery"]
+        expect_equal(len(discovery_logs), 1)
+        expect_equal(discovery_logs[0]["user_email"], "jane.doe@example.com")
+        expect_equal(discovery_logs[0]["principal_display_name"], "Jane Doe")
+        expect_equal(discovery_logs[0]["allowed_models"], ["gemini-3.8-flash"])
+        expect_in("jane.doe@example.com", discovery_logs[0]["message"])
+        expect_in("gemini-3.8-flash", discovery_logs[0]["message"])
 
     def test_http_discovery_post_method_not_allowed(self, flask_client: FlaskClient) -> None:
         """Verify http discovery post method not allowed."""

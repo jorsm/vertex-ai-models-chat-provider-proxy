@@ -68,6 +68,29 @@ variable "allowed_models" {
   }
 }
 
+variable "allowed_models_users_override" {
+  type        = map(list(string))
+  description = "Per-user model allowlist overrides mapped by caller email; replaces allowed_models for matching users"
+  nullable    = false
+
+  validation {
+    condition = alltrue([
+      for email, models in var.allowed_models_users_override :
+      try(trimspace(email) != "", false) &&
+      try(length(models) > 0 && length(distinct(models)) == length(models), false) &&
+      alltrue([
+        for model in try(models, []) :
+        try(
+          can(regex("^[a-zA-Z0-9_.@-]+$", model)) &&
+          !can(regex("^(claude|gemini)-.*-(minimal|low|medium|high|xhigh|max)$", model)),
+          false
+        )
+      ])
+    ])
+    error_message = "Each user override must map a non-empty email to a non-empty list of unique canonical model catalog IDs containing only letters, digits, underscores, dots, @ or hyphens, without obsolete effort aliases."
+  }
+}
+
 variable "allowed_vertex_regions" {
   type        = list(string)
   description = "List of Vertex AI regions (lowercase) that clients may target through the proxy"

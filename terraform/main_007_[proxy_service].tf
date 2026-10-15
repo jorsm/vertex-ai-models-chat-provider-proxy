@@ -64,6 +64,10 @@ resource "google_cloud_run_v2_service" "copilot_chat_proxy" {
         value = join(",", var.allowed_models)
       }
       env {
+        name  = "ALLOWED_MODELS_USERS_OVERRIDE"
+        value = jsonencode(var.allowed_models_users_override)
+      }
+      env {
         name  = "CHAT_USER_LABEL_KEY"
         value = var.chat_user_label_key
       }

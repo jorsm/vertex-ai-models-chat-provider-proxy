@@ -23,6 +23,7 @@ Variables marked *required* have no default: the service refuses to use a missin
 | `ALLOWED_VERTEX_PROJECTS` | no | Comma-separated list (or JSON array) of Vertex AI project IDs clients may target; defaults to `PROXY_PROJECT_ID` | `allowed_vertex_projects` (empty list = proxy project) |
 | `ALLOWED_REGIONS` | yes | Comma-separated list (or JSON array) of permitted Vertex AI locations, for example `global` | `allowed_vertex_regions` |
 | `ALLOWED_MODELS` | yes | Comma-separated list (or JSON array) of exact permitted canonical catalog IDs; effort is a request field | `allowed_models` |
+| `ALLOWED_MODELS_USERS_OVERRIDE` | no | JSON object mapping caller email addresses to per-user lists of permitted canonical catalog IDs (replaces `ALLOWED_MODELS` for matching users) | `allowed_models_users_override` |
 | `CHAT_USER_LABEL_KEY` | yes | Key under which the chat client sends the user (don't touch: fixed by the extension) | `chat_user_label_key` |
 | `CHAT_PROJECT_LABEL_KEY` | yes | Key under which the chat client sends the workspace (don't touch: fixed by the extension) | `chat_project_label_key` |
 | `BILLING_USER_LABEL_KEY` | yes | Billing label key that carries the client-declared user | `billing_user_label_key` |
